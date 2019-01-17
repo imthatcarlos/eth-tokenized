@@ -14,14 +14,14 @@ import "./ERC223.sol";
 contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
   using SafeMath for uint;
 
-  uint public decimals = 18; // allows us to divide and retain decimals
+  uint public decimals = 18;  // allows us to divide and retain decimals
 
-  uint private DAYS_PER_YEAR = 365; // should include setter function for leap years
+  uint private DAYS_PER_YEAR = 365;           // TODO: should include setter function for leap years
   uint private SECONDS_PER_DAY = 86400;
+  uint public VALUE_PER_TOKEN_USD_CENTS = 10;
 
   string public name;           // might want to define a standard, ex: MAKE MODEL YEAR
   uint public valueUSD;         // total USD value of the asset
-  uint public valuePerTokenUSD; // starting USD price per token
   uint public annualizedROI;    // percentage value
   uint public createdAt;        // datetime when contract was created
   uint public timeframeMonths;  // timeframe to be sold (months) - might need to be seconds so it's flexible
@@ -40,22 +40,19 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
    *
    * @param _name Name of the asset
    * @param _valueUSD Value of the asset in USD
-   * @param _cap Cap on the number of tokens to be minted
-   * @param _valuePerTokenUSD Value of each token in USD
+   * @param _cap token cap == _valueUSD / _valuePerTokenUSD
    * @param _annualizedROI AROI %
-   * @param _timeframeMonths Time Frame to be sold in months 
+   * @param _timeframeMonths Time Frame to be sold in months
    */
   constructor(
     string memory _name,
     uint _valueUSD,
     uint _cap,
-    uint _valuePerTokenUSD,
     uint _annualizedROI,
     uint _timeframeMonths
   ) public ERC20Capped(_cap) {
     name = _name;
     valueUSD = _valueUSD;
-    valuePerTokenUSD = _valuePerTokenUSD;
     annualizedROI = _annualizedROI;
     createdAt = block.timestamp; // solium-disable-line security/no-block-members, whitespace
     timeframeMonths = _timeframeMonths;
@@ -97,12 +94,5 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
   function calculateProfitPerSecond(uint _yearly) internal view returns(uint) {
     uint daily = _yearly.div(DAYS_PER_YEAR);
     return daily.div(SECONDS_PER_DAY);
-  }
-
-  /**
-   * Do not accept ETH
-   */
-  function() external payable {
-    require(msg.value == 0, "not accepting ETH");
   }
 }
