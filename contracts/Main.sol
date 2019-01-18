@@ -1,17 +1,17 @@
 pragma solidity 0.5.0;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "./VTToken.sol";
+import "./TToken.sol";
 
 contract Main {
   using SafeMath for uint;
 
   event InvestmentRecordCreated(address indexed owner, uint id, address tokenAddress);
 
-  enum TokenType { Vehicle, Portfolio }
+  TToken stableToken;
 
-  ERC20 private daiToken;
+  enum TokenType { Vehicle, Portfolio }
 
   struct Investment {
     TokenType tokenType;
@@ -26,24 +26,24 @@ contract Main {
   Investment[] private investments;
   mapping (address => uint[]) private activeInvestmentIds;
 
-  constructor(address _daiTokenAddress) public {
-    daiToken = ERC20(_daiTokenAddress);
+  constructor(address _stableTokenAddress) public {
+    stableToken = TToken(_stableTokenAddress);
   }
 
-  function investVehicle(uint _amountDAI, address _tokenAddress) public {
+  function investVehicle(uint _amountStable, address _tokenAddress) public {
     VTToken tokenContract = VTToken(_tokenAddress);
 
     // total amount of tokens to mint for the sender
-    uint amountTokens = _amountDAI.div(tokenContract.valuePerTokenCents());
+    uint amountTokens = _amountStable.div(tokenContract.valuePerTokenCents());
 
     // sanity check, make sure we don't overflow
     require(tokenContract.cap() > tokenContract.totalSupply().add(amountTokens));
 
     // add to storage
-    _createInvestmentRecordV(_amountDAI, amountTokens, _tokenAddress, tokenContract.timeframeMonths());
+    _createInvestmentRecordV(_amountStable, amountTokens, _tokenAddress, tokenContract.timeframeMonths());
 
     // transfer the DAI tokens to this contract
-    require(daiToken.transferFrom(msg.sender, address(this), _amountDAI));
+    require(stableToken.transferFrom(msg.sender, address(this), _amountStable));
 
     // mint VT tokens for them
     tokenContract.mint(msg.sender, amountTokens);
