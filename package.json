@@ -4,11 +4,17 @@
   "description": "collection of smart contracts to tokenize assets",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "0x:trace": "MODE=trace truffle test",
+    "0x:coverage": "npm run clean && MODE=coverage truffle test; istanbul report html && open coverage/index.html",
+    "0x:profile": "npm run clean && MODE=profile truffle test; istanbul report html && open coverage/index.html",
+    "0x:clean": "shx rm -rf coverage"
   },
   "author": "Carlos Beltran <imthatcarlos@gmail.com>",
   "license": "ISC",
   "devDependencies": {
+    "@0x/sol-coverage": "^1.0.3",
+    "@0x/sol-profiler": "^1.0.3",
+    "@0x/sol-trace": "^1.0.3",
     "@babel/cli": "^7.2.0",
     "@babel/core": "^7.2.0",
     "@babel/node": "^7.2.0",
@@ -19,12 +25,10 @@
     "ganache-cli": "^6.2.4-beta.2",
     "istanbul": "^0.4.5",
     "mocha": "^5.2.0",
-    "openzeppelin-solidity": "^2.1.1"
+    "openzeppelin-solidity": "^2.1.1",
+    "shx": "^0.3.2"
   },
   "dependencies": {
-    "@0x/sol-coverage": "^1.0.3",
-    "@0x/sol-profiler": "^1.0.3",
-    "@0x/sol-trace": "^1.0.3",
     "@babel/polyfill": "^7.2.5",
     "@babel/runtime": "^7.2.0",
     "async": "^2.6.1",
