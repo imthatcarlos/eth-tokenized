@@ -1,7 +1,6 @@
 require('dotenv').config();
 
 const Web3 = require('web3');
-const fixTruffleContract = require('./fixTruffleContract');
 const fs = require('fs');
 const path = require('path');
 
