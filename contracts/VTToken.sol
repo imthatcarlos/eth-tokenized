@@ -2,6 +2,7 @@ pragma solidity 0.5.0;
 
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Burnable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Capped.sol";
+// need to add lockperiod contract!!
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./ERC223.sol";
 
