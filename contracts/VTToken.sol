@@ -19,13 +19,13 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
 
   uint private DAYS_PER_YEAR = 365;           // TODO: should include setter function for leap years
   uint private SECONDS_PER_DAY = 86400;
-  uint public VALUE_PER_TOKEN_USD_CENTS = 10;
 
-  string public name;           // might want to define a standard, ex: MAKE MODEL YEAR
-  uint public valueUSD;         // total USD value of the asset
-  uint public annualizedROI;    // percentage value
-  uint public createdAt;        // datetime when contract was created
-  uint public timeframeMonths;  // timeframe to be sold (months) - might need to be seconds so it's flexible
+  string public name;                  // might want to define a standard, ex: MAKE MODEL YEAR
+  uint public valueUSD;                // total USD value of the asset
+  uint public annualizedROI;           // percentage value
+  uint public createdAt;               // datetime when contract was created
+  uint public timeframeMonths;         // timeframe to be sold (months)
+  uint public valuePerTokenCents = 10; //
 
   // mapping(address => uint) mintedAtTimestamps; // lets us track when tokens were minted for which address
 

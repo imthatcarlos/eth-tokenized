@@ -13,38 +13,34 @@ contract Main {
 
   ERC20 private daiToken;
 
-  uint public VALUE_PER_TOKEN_USD_CENTS = 10;
-  uint public lockPeriodSeconds;
-
   struct Investment {
     TokenType tokenType;
     address owner;
-    address[] tokenAddresses; // TODO: maybe set a cap?
+    address[] tokenAddresses;
     uint amountDAI;
     uint amountTokens;
     uint createdAt;
-    uint releasedAt;
+    uint timeframeMonths;
   }
 
   Investment[] private investments;
   mapping (address => uint[]) private activeInvestmentIds;
 
-  constructor(address _daiTokenAddress, uint _lockPeriodSeconds) public {
+  constructor(address _daiTokenAddress) public {
     daiToken = ERC20(_daiTokenAddress);
-    lockPeriodSeconds = _lockPeriodSeconds;
   }
 
   function investVehicle(uint _amountDAI, address _tokenAddress) public {
     VTToken tokenContract = VTToken(_tokenAddress);
 
     // total amount of tokens to mint for the sender
-    uint amountTokens = _amountDAI.div(VALUE_PER_TOKEN_USD_CENTS);
+    uint amountTokens = _amountDAI.div(tokenContract.valuePerTokenCents());
 
     // sanity check, make sure we don't overflow
     require(tokenContract.cap() > tokenContract.totalSupply().add(amountTokens));
 
     // add to storage
-    _createInvestmentRecordV(_amountDAI, amountTokens, _tokenAddress);
+    _createInvestmentRecordV(_amountDAI, amountTokens, _tokenAddress, tokenContract.timeframeMonths());
 
     // transfer the DAI tokens to this contract
     require(daiToken.transferFrom(msg.sender, address(this), _amountDAI));
@@ -57,18 +53,25 @@ contract Main {
    * @param _amountDAI Amount of DAI tokens invested
    * @param _amountTokens Amount of tokens minted in the VT token contract
    @ @param _tokenAddress Address of VT token contract
+   @ param _timeframeMonths timeframe to be sold (months)
    */
-  function _createInvestmentRecordV(uint _amountDAI, uint _amountTokens, address _tokenAddress) internal {
-    /* solium-disable-next-line security/no-block-members */
-    uint releasedAt = block.timestamp.add(lockPeriodSeconds);
+  function _createInvestmentRecordV(
+    uint _amountDAI,
+    uint _amountTokens,
+    address _tokenAddress,
+    uint _timeframeMonths
+  ) internal {
+    address[] memory tokenAddresses = new address[](0);
+    tokenAddresses[0] = _tokenAddress;
+
     Investment memory record = Investment({
       tokenType: TokenType.Vehicle,
       owner: msg.sender,
-      tokenAddresses: new address[](0),
+      tokenAddresses: tokenAddresses,
       amountDAI: _amountDAI,
       amountTokens: _amountTokens,
       createdAt: block.timestamp,
-      releasedAt: releasedAt
+      timeframeMonths: _timeframeMonths
     });
 
     // add the record to the storage array and push the index to the hashmap
