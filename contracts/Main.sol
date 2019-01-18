@@ -9,8 +9,6 @@ contract Main {
 
   event InvestmentRecordCreated(address indexed owner, uint id, address tokenAddress);
 
-  TToken stableToken;
-
   enum TokenType { Vehicle, Portfolio }
 
   struct Investment {
@@ -22,6 +20,8 @@ contract Main {
     uint createdAt;
     uint timeframeMonths;
   }
+
+  TToken stableToken;
 
   Investment[] private investments;
   mapping (address => uint[]) private activeInvestmentIds;
