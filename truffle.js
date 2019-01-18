@@ -18,9 +18,7 @@ require('dotenv').config();
 require('@babel/register');
 require('@babel/polyfill');
 
-const modeIdx = process.argv.indexOf('--mode');
-const mode = modeIdx != -1 ? process.argv[modeIdx + 1] : 'development';
-
+const mode = process.env.MODE
 if (mode === "profile") {
   global.profilerSubprovider = new ProfilerSubprovider(
     artifactAdapter,

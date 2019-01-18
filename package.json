@@ -4,7 +4,10 @@
   "description": "collection of smart contracts to tokenize assets",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "0x:trace": "MODE=trace truffle test",
+    "0x:coverage": "npm run clean && MODE=coverage truffle test; istanbul report html && open coverage/index.html",
+    "0x:profile": "npm run clean && MODE=profile truffle test; istanbul report html && open coverage/index.html",
+    "0x:clean": "shx rm -rf coverage"
   },
   "author": "Carlos Beltran <imthatcarlos@gmail.com>",
   "license": "ISC",
