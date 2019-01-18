@@ -1,6 +1,7 @@
 const ProviderEngine = require("web3-provider-engine")
 const HDWalletProvider = require("truffle-hdwallet-provider");
 const NonceTrackerSubprovider = require("web3-provider-engine/subproviders/nonce-tracker");
+const RpcProvider = require("web3-provider-engine/subproviders/rpc.js")
 
 const { TruffleArtifactAdapter } = require('@0x/sol-trace');
 const { ProfilerSubprovider } = require("@0x/sol-profiler");
@@ -54,7 +55,12 @@ module.exports = {
   // },
   networks: {
     development: {
-      provider,
+      provider: function() {
+        provider.addProvider(new RpcProvider({ rpcUrl: "http://localhost:8545" }));
+        provider.start();
+        provider.send = provider.sendAsync.bind(provider);
+        return provider;
+      },
       host: 'localhost',
       port: 8545,
       network_id: '*',
