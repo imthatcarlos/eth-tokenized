@@ -17,10 +17,14 @@
     "@babel/register": "^7.0.0",
     "chai": "^4.2.0",
     "ganache-cli": "^6.2.4-beta.2",
+    "istanbul": "^0.4.5",
     "mocha": "^5.2.0",
     "openzeppelin-solidity": "^2.1.1"
   },
   "dependencies": {
+    "@0x/sol-coverage": "^1.0.3",
+    "@0x/sol-profiler": "^1.0.3",
+    "@0x/sol-trace": "^1.0.3",
     "@babel/polyfill": "^7.2.5",
     "@babel/runtime": "^7.2.0",
     "async": "^2.6.1",
