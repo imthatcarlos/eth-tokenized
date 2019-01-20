@@ -9,8 +9,8 @@ import "./TToken.sol";
 
 /**
  * @title VTToken
- * these are tokens that represent a particular vehicle asset
- * TODO: createdAt might need to become mintedAtTimestamps[msg.sender] = time, depending on minting timeline
+ * This token contract represents a particular vehicle asset, and tokens are minted for
+ * accounts as they invest in them.
  * @author Carlos Beltran <imthatcarlos>
  */
 contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
@@ -76,7 +76,16 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
   }
 
   /**
+   * Do not accept ETH
+   */
+  function() external payable {
+    require(msg.value == 0, "not accepting ETH");
+  }
+
+  /**
    * Calculates and returns the current profit (to the second) of the sender account's tokens
+   * NOTE: we calculate the proft from the second the contract was created, NOT when the tokens have been
+   * minted -> createdAt might need to become mintedAtTimestamps[msg.sender] and assigned in Main#investVehicle
    */
   function getCurrentProfit() public view activeInvestment returns(uint) {
     uint amountTokens = balanceOf(msg.sender);
@@ -111,19 +120,13 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
 
     // if everyone has claimed their profits, and we have no T tokens remaining, terminate the contract
     if (totalSupply() == 0 && stableToken.balanceOf(address(this)) == 0) {
-      selfdestruct(assetOwner);
+      selfdestruct(assetOwner); // sends any remaining ETH to the asset owner
     }
   }
 
   /**
-   * Do not accept ETH
-   */
-  function() external payable {
-    require(msg.value == 0, "not accepting ETH");
-  }
-
-  /**
    * Calculates profit per second - based on yearly
+   * NOTE this uses DAYS_PER_YEAR which should be mofifiable for leap years
    * @param _amountTokens Number of tokens held
    */
   function calculateProfitPerSecond(uint _amountTokens) internal view returns(uint) {
