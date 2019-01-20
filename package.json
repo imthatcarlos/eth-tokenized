@@ -2,7 +2,7 @@
   "name": "eth-tokenized",
   "version": "0.0.1",
   "description": "collection of smart contracts to tokenize assets",
-  "main": "index.js",
+  "main": "truffle.js",
   "scripts": {
     "0x:trace": "MODE=trace truffle test",
     "0x:coverage": "npm run clean && MODE=coverage truffle test; istanbul report html && open coverage/index.html",
@@ -21,11 +21,10 @@
     "@babel/plugin-transform-runtime": "^7.2.0",
     "@babel/preset-env": "^7.2.0",
     "@babel/register": "^7.0.0",
-    "chai": "^4.2.0",
+    "chai-bignumber": "^3.0.0",
     "ganache-cli": "^6.2.4-beta.2",
     "istanbul": "^0.4.5",
-    "mocha": "^5.2.0",
-    "openzeppelin-solidity": "^2.1.1",
+    "openzeppelin-solidity": "2.1.1",
     "shx": "^0.3.2"
   },
   "dependencies": {

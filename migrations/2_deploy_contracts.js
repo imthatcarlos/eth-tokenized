@@ -4,8 +4,6 @@ const TToken = artifacts.require("./TToken");
 var fs = require("fs");
 var path = require("path");
 
-const LOCK_PERIOD_SECONDS = 60 * 60 * 24 * 365; // 12 months
-
 module.exports = function(deployer) {
   var networkIdx = process.argv.indexOf("--network");
   var network = networkIdx != -1 ? process.argv[networkIdx + 1] : "development"
@@ -19,7 +17,7 @@ module.exports = function(deployer) {
 
   // deploy contract
   deployer.deploy(TToken).then(() => {
-    return deployer.deploy(Main, TToken.address, LOCK_PERIOD_SECONDS).then(() => {
+    return deployer.deploy(Main, TToken.address).then(() => {
       data[network]["Main"] = Main.address;
       data[network]["TToken"] = TToken.address;
 

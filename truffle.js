@@ -8,16 +8,16 @@ const { ProfilerSubprovider } = require("@0x/sol-profiler");
 const { CoverageSubprovider } = require("@0x/sol-coverage");
 const { RevertTraceSubprovider } = require("@0x/sol-trace");
 
+require('dotenv').config();
+require('@babel/register');
+require('@babel/polyfill');
+
 const projectRoot = "";
 const solcVersion = "0.5.0";
 const defaultFromAddress = "0x5409ed021d9299bf6814279a6a1411a7e866a631"; // from 0xorg/devnet docker
 const isVerbose = true;
 const artifactAdapter = new TruffleArtifactAdapter(projectRoot, solcVersion);
 const provider = new ProviderEngine();
-
-require('dotenv').config();
-require('@babel/register');
-require('@babel/polyfill');
 
 const mode = process.env.MODE
 if (mode === "profile") {

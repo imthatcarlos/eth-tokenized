@@ -17,7 +17,8 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
 
   uint public decimals = 18;  // allows us to divide and retain decimals
 
-  uint private DAYS_PER_YEAR = 365;           // TODO: should include setter function for leap years
+  uint private MONTHS_PER_YEAR = 12;
+  uint private DAYS_PER_YEAR = 365;
   uint private SECONDS_PER_DAY = 86400;
 
   string public name;                  // might want to define a standard, ex: MAKE MODEL YEAR
@@ -25,7 +26,7 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
   uint public annualizedROI;           // percentage value
   uint public createdAt;               // datetime when contract was created
   uint public timeframeMonths;         // timeframe to be sold (months)
-  uint public valuePerTokenCents = 10; //
+  uint public valuePerTokenCents;      //
 
   // mapping(address => uint) mintedAtTimestamps; // lets us track when tokens were minted for which address
 
@@ -43,57 +44,66 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
    * @param _valueUSD Value of the asset in USD
    * @param _cap token cap == _valueUSD / _valuePerTokenUSD
    * @param _annualizedROI AROI %
-   * @param _timeframeMonths Time Frame to be sold in months
+   * @param _timeframeMonths Time frame for the investment
    */
   constructor(
     string memory _name,
     uint _valueUSD,
     uint _cap,
     uint _annualizedROI,
-    uint _timeframeMonths
+    uint _timeframeMonths,
+    uint _valuePerTokenCents
   ) public ERC20Capped(_cap) {
     name = _name;
     valueUSD = _valueUSD;
     annualizedROI = _annualizedROI;
     createdAt = block.timestamp; // solium-disable-line security/no-block-members, whitespace
     timeframeMonths = _timeframeMonths;
+    valuePerTokenCents = _valuePerTokenCents;
   }
 
   /**
    * Calculates and returns the current profit (to the second) of the sender account's tokens
-   * NOTE: requires that the sender account has an active investment in this asset
    */
   function getCurrentProfit() public view activeInvestment returns(uint) {
-    uint balance = balanceOf(msg.sender);
-    uint yearly = calculateProfitYearly(balance);
-    uint perSec = calculateProfitPerSecond(yearly);
-    return balance.add(perSec.mul(block.timestamp - createdAt));
+    uint amountTokens = balanceOf(msg.sender);
+    uint perSec = calculateProfitPerSecond(amountTokens);
+    return amountTokens.add(perSec.mul(block.timestamp - createdAt));
   }
 
   /**
    * Calculates and returns the projected profit of the sender account's tokens
-   * NOTE: requires that the sender account has an active investment in this asset
+   * NOTE: returns numbers with 2 point precision, ex: 1479 => 14.79
    */
-  function getFutureProfit() public view activeInvestment returns(uint) {
-    uint balance = balanceOf(msg.sender);
-    uint yearly = calculateProfitYearly(balance);
-    return balance.add(yearly); // assuming the timeframe is always 12 months, else we'll have to calculate
-  }
+  function getProjectedProfit() public view activeInvestment returns(uint) {
+    uint amountTokens = balanceOf(msg.sender);
+    uint yearly = calculateProfitYearly(amountTokens);
+    uint monthly = yearly.mul(100).div(MONTHS_PER_YEAR);
 
-  /**
-   * Calculates yearly profit of holding tokens for this asset
-   * @param _balance Number of tokens held
-   */
-  function calculateProfitYearly(uint _balance) internal view returns(uint) {
-    return (_balance.mul(annualizedROI)).div(100);
+    // TODO: need to lose precision to add!!!
+
+    return amountTokens.add(monthly.mul(timeframeMonths));
   }
 
   /**
    * Calculates profit per second - based on yearly
-   * @param _yearly Yearly profit
+   * NOTE: returns numbers with 2 point precision, ex: 1479 => 14.79
+   * @param _amountTokens Number of tokens held
    */
-  function calculateProfitPerSecond(uint _yearly) internal view returns(uint) {
-    uint daily = _yearly.div(DAYS_PER_YEAR);
-    return daily.div(SECONDS_PER_DAY);
+  function calculateProfitPerSecond(uint _amountTokens) internal view returns(uint) {
+    // TODO: this is where we lose precision
+    uint yearly = calculateProfitYearly(_amountTokens);
+    uint daily = yearly.mul(100).div(DAYS_PER_YEAR);
+    uint perSec = daily.div(SECONDS_PER_DAY);
+
+    return perSec;
+  }
+
+  /**
+   * Calculates yearly profit of holding tokens for this asset
+   * @param _amountTokens Number of tokens held
+   */
+  function calculateProfitYearly(uint _amountTokens) internal view returns(uint) {
+    return (_amountTokens.mul(annualizedROI)).div(100); // we might lose precision here...
   }
 }
