@@ -14,10 +14,11 @@ contract AssetRegistry is Ownable, Pausable {
 
   struct Asset {
     address owner;
-    address tokenAddress;
+    address payable tokenAddress;
+    bool sold;
   }
 
-  TToken stableToken;
+  TToken private stableToken;
 
   Asset[] private assets;
   mapping (address => uint[]) private ownerToAssetIds;
@@ -54,7 +55,7 @@ contract AssetRegistry is Ownable, Pausable {
    * @param _valuePerTokenCents Value of each token
    */
   function addAsset(
-    address owner,
+    address payable owner,
     string calldata _name,
     uint _valueUSD,
     uint _cap,
@@ -64,6 +65,8 @@ contract AssetRegistry is Ownable, Pausable {
     uint _valuePerTokenCents
   ) external {
     VTToken token = new VTToken(
+      owner,
+      address(stableToken),
       _name,
       _valueUSD,
       _cap,
@@ -75,7 +78,8 @@ contract AssetRegistry is Ownable, Pausable {
 
     Asset memory record = Asset({
       owner: owner,
-      tokenAddress: address(token)
+      tokenAddress: address(token),
+      sold: false
     });
 
     // add the record to the storage array and push the index to the hashmap
@@ -106,6 +110,8 @@ contract AssetRegistry is Ownable, Pausable {
     // send T tokens from owner wallet to the token contract to be claimed by investors
     require(stableToken.transferFrom(msg.sender, asset.tokenAddress, _amountStable));
 
+    asset.sold = true;
+
     emit AssetFunded(_assetId, asset.tokenAddress);
   }
 
@@ -127,10 +133,11 @@ contract AssetRegistry is Ownable, Pausable {
    * Returns details of the Asset with the given id
    * @param _id Asset id
    */
-  function getAssetById(uint _id) public view validAsset(_id) returns (address owner, address tokenAddress) {
+  function getAssetById(uint _id) public view validAsset(_id) returns (address owner, address tokenAddress, bool sold) {
     Asset storage asset = assets[_id];
 
     owner = asset.owner;
     tokenAddress = asset.tokenAddress;
+    sold = asset.sold;
   }
 }

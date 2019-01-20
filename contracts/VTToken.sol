@@ -5,6 +5,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20Capped.sol";
 // need to add lockperiod contract!!
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./ERC223.sol";
+import "./TToken.sol";
 
 /**
  * @title VTToken
@@ -21,6 +22,7 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
   uint private DAYS_PER_YEAR = 365;
   uint private SECONDS_PER_DAY = 86400;
 
+  address payable public assetOwner;   // address of the asset owner
   string public name;                  // might want to define a standard, ex: MAKE MODEL YEAR
   uint public valueUSD;                // initial USD value of the asset
   uint public annualizedROI;           // percentage value
@@ -28,6 +30,8 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
   uint public createdAt;               // datetime when contract was created
   uint public timeframeMonths;         // timeframe to be sold (months)
   uint public valuePerTokenCents;
+
+  TToken private stableToken;
 
   // mapping(address => uint) mintedAtTimestamps; // lets us track when tokens were minted for which address
 
@@ -39,6 +43,8 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
   /**
    * Contract constructor
    * Instantiates an instance of a VT token contract with specific properties for the asset
+   * @param _assetOwner Address of asset owner
+   * @param _stableTokenAddress Address of T token
    * @param _name Name of the asset
    * @param _valueUSD Value of the asset in USD
    * @param _cap token cap == _valueUSD / _valuePerTokenUSD
@@ -48,6 +54,8 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
    * @param _valuePerTokenCents Value of each token
    */
   constructor(
+    address payable _assetOwner,
+    address _stableTokenAddress,
     string memory _name,
     uint _valueUSD,
     uint _cap,
@@ -63,6 +71,8 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
     createdAt = block.timestamp; // solium-disable-line security/no-block-members, whitespace
     timeframeMonths = _timeframeMonths;
     valuePerTokenCents = _valuePerTokenCents;
+    stableToken = TToken(_stableTokenAddress);
+    assetOwner = _assetOwner;
   }
 
   /**
@@ -83,6 +93,33 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
     uint monthly = yearly.div(MONTHS_PER_YEAR);
 
     return monthly.mul(timeframeMonths);
+  }
+
+  /**
+   * Allows a token holder to claim their profits once this contract has been funded
+   * Burns the sender's VT tokens
+   */
+  function claimFundsAndBurn() public activeInvestment {
+    // sanity check - make sure we're funded
+    require(stableToken.balanceOf(address(this)) > 0);
+
+    // transfer T tokens to the investor equal to the projected profit
+    require(stableToken.transfer(msg.sender, getProjectedProfit()));
+
+    // burn their tokens
+    burn(balanceOf(msg.sender));
+
+    // if everyone has claimed their profits, and we have no T tokens remaining, terminate the contract
+    if (totalSupply() == 0 && stableToken.balanceOf(address(this)) == 0) {
+      selfdestruct(assetOwner);
+    }
+  }
+
+  /**
+   * Do not accept ETH
+   */
+  function() external payable {
+    require(msg.value == 0, "not accepting ETH");
   }
 
   /**

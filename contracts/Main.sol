@@ -21,7 +21,7 @@ contract Main {
     uint timeframeMonths;
   }
 
-  TToken stableToken;
+  TToken private stableToken;
 
   Investment[] private investments;
   mapping (address => uint[]) private activeInvestmentIds;
@@ -30,7 +30,7 @@ contract Main {
     stableToken = TToken(_stableTokenAddress);
   }
 
-  function investVehicle(uint _amountStable, address _tokenAddress) public {
+  function investVehicle(uint _amountStable, address payable _tokenAddress) public {
     VTToken tokenContract = VTToken(_tokenAddress);
 
     // total amount of tokens to mint for the sender
