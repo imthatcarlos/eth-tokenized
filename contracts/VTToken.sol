@@ -78,9 +78,7 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
   function getProjectedProfit() public view activeInvestment returns(uint) {
     uint amountTokens = balanceOf(msg.sender);
     uint yearly = calculateProfitYearly(amountTokens);
-    uint monthly = yearly.mul(100).div(MONTHS_PER_YEAR);
-
-    // TODO: need to lose precision to add!!!
+    uint monthly = yearly.div(MONTHS_PER_YEAR);
 
     return amountTokens.add(monthly.mul(timeframeMonths));
   }
@@ -104,6 +102,6 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
    * @param _amountTokens Number of tokens held
    */
   function calculateProfitYearly(uint _amountTokens) internal view returns(uint) {
-    return (_amountTokens.mul(annualizedROI)).div(100); // we might lose precision here...
+    return (_amountTokens.mul(annualizedROI)).div(100);
   }
 }
