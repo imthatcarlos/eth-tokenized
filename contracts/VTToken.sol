@@ -22,11 +22,12 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
   uint private SECONDS_PER_DAY = 86400;
 
   string public name;                  // might want to define a standard, ex: MAKE MODEL YEAR
-  uint public valueUSD;                // total USD value of the asset
+  uint public valueUSD;                // initial USD value of the asset
   uint public annualizedROI;           // percentage value
+  uint public projectedValueUSD;       // projected USD value of the asset
   uint public createdAt;               // datetime when contract was created
   uint public timeframeMonths;         // timeframe to be sold (months)
-  uint public valuePerTokenCents;      //
+  uint public valuePerTokenCents;
 
   // mapping(address => uint) mintedAtTimestamps; // lets us track when tokens were minted for which address
 
@@ -44,19 +45,23 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
    * @param _valueUSD Value of the asset in USD
    * @param _cap token cap == _valueUSD / _valuePerTokenUSD
    * @param _annualizedROI AROI %
+   * @param _projectedValueUSD The PROJECTED value of the asset in USD
    * @param _timeframeMonths Time frame for the investment
+   * @param _valuePerTokenCents Value of each token
    */
   constructor(
     string memory _name,
     uint _valueUSD,
     uint _cap,
     uint _annualizedROI,
+    uint _projectedValueUSD,
     uint _timeframeMonths,
     uint _valuePerTokenCents
   ) public ERC20Capped(_cap) {
     name = _name;
     valueUSD = _valueUSD;
     annualizedROI = _annualizedROI;
+    projectedValueUSD = _projectedValueUSD;
     createdAt = block.timestamp; // solium-disable-line security/no-block-members, whitespace
     timeframeMonths = _timeframeMonths;
     valuePerTokenCents = _valuePerTokenCents;
@@ -68,31 +73,28 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
   function getCurrentProfit() public view activeInvestment returns(uint) {
     uint amountTokens = balanceOf(msg.sender);
     uint perSec = calculateProfitPerSecond(amountTokens);
-    return amountTokens.add(perSec.mul(block.timestamp - createdAt));
+    return perSec.mul(block.timestamp - createdAt);
   }
 
   /**
    * Calculates and returns the projected profit of the sender account's tokens
-   * NOTE: returns numbers with 2 point precision, ex: 1479 => 14.79
    */
   function getProjectedProfit() public view activeInvestment returns(uint) {
     uint amountTokens = balanceOf(msg.sender);
     uint yearly = calculateProfitYearly(amountTokens);
     uint monthly = yearly.div(MONTHS_PER_YEAR);
 
-    return amountTokens.add(monthly.mul(timeframeMonths));
+    return monthly.mul(timeframeMonths);
   }
 
   /**
    * Calculates profit per second - based on yearly
-   * NOTE: returns numbers with 2 point precision, ex: 1479 => 14.79
    * @param _amountTokens Number of tokens held
    */
   function calculateProfitPerSecond(uint _amountTokens) internal view returns(uint) {
-    // TODO: this is where we lose precision
     uint yearly = calculateProfitYearly(_amountTokens);
-    uint daily = yearly.mul(100).div(DAYS_PER_YEAR);
-    uint perSec = daily.div(SECONDS_PER_DAY);
+    uint daily = yearly.div(DAYS_PER_YEAR);
+    uint perSec = daily.div(SECONDS_PER_DAY); // we shouldn't lose precision with
 
     return perSec;
   }

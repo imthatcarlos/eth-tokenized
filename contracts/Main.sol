@@ -48,6 +48,7 @@ contract Main {
     // mint VT tokens for them
     tokenContract.mint(msg.sender, amountTokens);
   }
+
   /**
    * Creates an Investment record and adds it to storage
    * @param _amountDAI Amount of DAI tokens invested
