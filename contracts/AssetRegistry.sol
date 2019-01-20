@@ -41,6 +41,18 @@ contract AssetRegistry is Ownable, Pausable {
     stableToken = TToken(_stableTokenAddress);
   }
 
+  /**
+   * Creates an Asset record and adds it to storage, also creating a VTToken contract instance to
+   * represent the asset
+   * @param owner Owner of the asset
+   * @param _name Name of the asset
+   * @param _valueUSD Value of the asset in USD
+   * @param _cap token cap == _valueUSD / _valuePerTokenUSD
+   * @param _annualizedROI AROI %
+   * @param _projectedValueUSD The PROJECTED value of the asset in USD
+   * @param _timeframeMonths Time frame for the investment
+   * @param _valuePerTokenCents Value of each token
+   */
   function addAsset(
     address owner,
     string calldata _name,
@@ -73,11 +85,18 @@ contract AssetRegistry is Ownable, Pausable {
     emit AssetRecordCreated(owner, id, address(token));
   }
 
-  // should be called when the asset is sold, and any amount of T tokens sent in should
-  // equal the projected profit. this amount is divided amongst token owners based on the percentage
-  // of tokens they own. these token owners must claim their profit, it will NOT be automatically
-  // distributed to avoid security concerns
-  // NOTE: asset owner must have approved the transfer of T tokens from their wallet to the VTToken contract
+
+  /**
+   * Allows an Asset Owner to fund the VTToken contract with T tokens to be distributed to investors
+   * @dev should be called when the asset is sold, and any amount of T tokens sent in should
+   *      equal the projected profit. this amount is divided amongst token owners based on the percentage
+   *      of tokens they own. these token owners must claim their profit, it will NOT be automatically
+   *      distributed to avoid security concerns
+   * NOTE: asset owner must have approved the transfer of T tokens from their wallet to the VTToken contract
+   * @param _amountStable Amount of T tokens the owner will fund - MUST equal the asset's projected value recorded
+   * @param _assetId Asset id
+   */
+
   function fundAsset(uint _amountStable, uint _assetId) public onlyAssetOwner validAsset(_assetId) {
     Asset storage asset = assets[_assetId];
 
@@ -90,14 +109,24 @@ contract AssetRegistry is Ownable, Pausable {
     emit AssetFunded(_assetId, asset.tokenAddress);
   }
 
+  /**
+   * Returns the ids of all the sender's active assets
+   */
   function getActiveAssetIds() public hasActiveAsset view returns(uint[] memory) {
     return ownerToAssetIds[msg.sender];
   }
 
+  /**
+   * Returns the number of active assets
+   */
   function getAssetsCount() public view returns(uint) {
     return assets.length;
   }
 
+  /**
+   * Returns details of the Asset with the given id
+   * @param _id Asset id
+   */
   function getAssetById(uint _id) public view validAsset(_id) returns (address owner, address tokenAddress) {
     Asset storage asset = assets[_id];
 

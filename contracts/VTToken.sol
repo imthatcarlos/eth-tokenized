@@ -38,9 +38,7 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
 
   /**
    * Contract constructor
-   * Instantiates an instance of a Vehicle Token contract with specific properties for the asset
-   * NOTE: calling contract should manage the minting
-   *
+   * Instantiates an instance of a VT token contract with specific properties for the asset
    * @param _name Name of the asset
    * @param _valueUSD Value of the asset in USD
    * @param _cap token cap == _valueUSD / _valuePerTokenUSD
