@@ -10,7 +10,7 @@ const BigNumber = require('bignumber.js');
 const ASSET_NAME = "BMW 2019";
 const VALUE_PER_TOKEN_USD_CENTS = 10;
 const VALUE_USD = 100000; // let them all be 100k by default
-const CAP = VALUE_USD; // USD : tokenCap are 1:1
+const CAP = VALUE_USD / VALUE_PER_TOKEN_USD_CENTS;
 const ANNUALIZED_ROI = 15; // %
 
 /**
