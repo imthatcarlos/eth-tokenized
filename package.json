@@ -4,6 +4,7 @@
   "description": "collection of smart contracts to tokenize assets",
   "main": "truffle.js",
   "scripts": {
+    "0x:ganache": "docker run -it --rm -p 8545:8501 0xorg/devnet",
     "0x:trace": "MODE=trace truffle test",
     "0x:coverage": "npm run clean && MODE=coverage truffle test; istanbul report html && open coverage/index.html",
     "0x:profile": "npm run clean && MODE=profile truffle test; istanbul report html && open coverage/index.html",
