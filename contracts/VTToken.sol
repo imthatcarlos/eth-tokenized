@@ -2,7 +2,6 @@ pragma solidity 0.5.0;
 
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Burnable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Capped.sol";
-// need to add lockperiod contract!!
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./ERC223.sol";
 import "./TToken.sol";
@@ -118,15 +117,24 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
     // sanity check - make sure we're funded
     require(stableToken.balanceOf(address(this)) > 0);
 
-    // transfer T tokens to the investor equal to the projected profit
-    require(stableToken.transfer(msg.sender, getProjectedProfit()));
+    // transfer T tokens to the investor equal to the current profit
+    // NOTE: we are assuming there is no ceiling to the possible profit, meaning not greater than getProjectedProfit()
+    require(stableToken.transfer(msg.sender, getCurrentProfit()));
 
     // burn their tokens
     burn(balanceOf(msg.sender));
 
-    // if everyone has claimed their profits, and we have no T tokens remaining, terminate the contract
-    if (totalSupply() == 0 && stableToken.balanceOf(address(this)) == 0) {
-      selfdestruct(assetOwner); // sends any remaining ETH to the asset owner
+    if (totalSupply() == 0) {
+      // if everyone has claimed their profits, we should have 0 supply of tokens
+      uint balanceStable = stableToken.balanceOf(address(this));
+
+      // and we have some T tokens remaining (most likely a tiny fraction < 1) send them to the asset owner
+      if (balanceStable > 0) {
+        require(stableToken.transfer(assetOwner, balanceStable));
+      }
+
+      // and terminate the contract, sending any remaining ETH to the asset owner
+      selfdestruct(assetOwner);
     }
   }
 
@@ -149,6 +157,6 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
    * @param _amountTokens Number of tokens held
    */
   function calculateProfitYearly(uint _amountTokens) internal view returns(uint) {
-    return _amountTokens.mul(annualizedROI);
+    return _amountTokens.mul(annualizedROI).div(100);
   }
 }
