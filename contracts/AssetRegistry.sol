@@ -15,7 +15,7 @@ contract AssetRegistry is Ownable, Pausable {
   struct Asset {
     address owner;
     address payable tokenAddress;
-    bool sold;
+    bool funded;
   }
 
   TToken private stableToken;
@@ -79,7 +79,7 @@ contract AssetRegistry is Ownable, Pausable {
     Asset memory record = Asset({
       owner: owner,
       tokenAddress: address(token),
-      sold: false
+      funded: false
     });
 
     // add the record to the storage array and push the index to the hashmap
@@ -110,7 +110,7 @@ contract AssetRegistry is Ownable, Pausable {
     // send T tokens from owner wallet to the token contract to be claimed by investors
     require(stableToken.transferFrom(msg.sender, asset.tokenAddress, _amountStable));
 
-    asset.sold = true;
+    asset.funded = true;
 
     emit AssetFunded(_assetId, asset.tokenAddress);
   }
@@ -133,11 +133,11 @@ contract AssetRegistry is Ownable, Pausable {
    * Returns details of the Asset with the given id
    * @param _id Asset id
    */
-  function getAssetById(uint _id) public view validAsset(_id) returns (address owner, address tokenAddress, bool sold) {
+  function getAssetById(uint _id) public view validAsset(_id) returns (address owner, address tokenAddress, bool funded) {
     Asset storage asset = assets[_id];
 
     owner = asset.owner;
     tokenAddress = asset.tokenAddress;
-    sold = asset.sold;
+    funded = asset.funded;
   }
 }
