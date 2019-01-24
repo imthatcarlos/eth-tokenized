@@ -33,13 +33,20 @@ contract AssetRegistry is Ownable, Pausable {
     _;
   }
 
-  modifier onlyAssetOwner() {
-    require(ownerToAssetIds[msg.sender].length != 0);
+  modifier onlyAssetOwner(uint _id) {
+    require(assets[_id].owner == msg.sender);
     _;
   }
 
   constructor(address _stableTokenAddress) public {
     stableToken = TToken(_stableTokenAddress);
+
+    // take care of zero-index for storage array
+    assets.push(Asset({
+      owner: address(0),
+      tokenAddress: address(0),
+      funded: false
+    }));
   }
 
   /**
@@ -101,11 +108,11 @@ contract AssetRegistry is Ownable, Pausable {
    * @param _assetId Asset id
    */
 
-  function fundAsset(uint _amountStable, uint _assetId) public onlyAssetOwner validAsset(_assetId) {
+  function fundAsset(uint _amountStable, uint _assetId) public onlyAssetOwner(_assetId) validAsset(_assetId) {
     Asset storage asset = assets[_assetId];
 
     // sanity check
-    require(_amountStable >= VTToken(asset.tokenAddress).projectedValueUSD());
+    require(_amountStable.div(10**18) >= VTToken(asset.tokenAddress).projectedValueUSD());
 
     // send T tokens from owner wallet to the token contract to be claimed by investors
     require(stableToken.transferFrom(msg.sender, asset.tokenAddress, _amountStable));
@@ -123,10 +130,18 @@ contract AssetRegistry is Ownable, Pausable {
   }
 
   /**
+   * Returns the ids of all the given accounts's active assets
+   * NOTE: can only be called by contract owner
+   */
+  function getActiveAssetIdsOf(address owner) public view onlyOwner returns(uint[] memory) {
+    return ownerToAssetIds[owner];
+  }
+
+  /**
    * Returns the number of active assets
    */
   function getAssetsCount() public view returns(uint) {
-    return assets.length;
+    return assets.length - 1; // ignoring first one created at init
   }
 
   /**
