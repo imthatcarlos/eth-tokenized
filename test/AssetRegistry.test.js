@@ -48,14 +48,6 @@ contract('AssetRegistry', (accounts) => {
     stableToken = await TToken.new();
   });
 
-  describe('constructor()', () => {
-    it('initializes storage variables', async() => {
-      var registry = await setupAssetContract(accounts[0]);
-
-      assert.equal(await registry.owner(), accounts[0] , 'storage initialized');
-    });
-  });
-
   describe('addAsset()', () => {
     before(async ()=> {
       registry = await setupAssetContract(accounts[0]);
@@ -92,14 +84,16 @@ contract('AssetRegistry', (accounts) => {
 
     it('reverts if the sender has not approved the transfer of T tokens before funding', async() => {
       const amnt = web3.utils.toWei(calculateProjectedProfit().toString(), 'ether');
-      stableToken.mint(accounts[3], amnt);
+      await stableToken.mint(accounts[3], amnt);
 
       await shouldFail.reverting(registry.fundAsset(amnt, 1, { from: accounts[3] }));
     });
 
     it('sets storage variable funded to true', async() => {
       const amnt = web3.utils.toWei((VALUE_USD + calculateProjectedProfit()).toString(), 'ether');
-      stableToken.mint(accounts[3], amnt);
+
+      // we minted in the test above...
+      await stableToken.mint(accounts[3], amnt);
 
       await stableToken.approve(registry.address, amnt, { from: accounts[3]});
 
