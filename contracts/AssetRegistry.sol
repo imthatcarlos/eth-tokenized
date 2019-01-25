@@ -1,12 +1,10 @@
 pragma solidity 0.5.0;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 import "./VTToken.sol";
 import "./TToken.sol";
 
-contract AssetRegistry is Ownable, Pausable {
+contract AssetRegistry {
   using SafeMath for uint;
 
   event AssetRecordCreated(address indexed owner, uint id, address tokenAddress);
@@ -133,7 +131,7 @@ contract AssetRegistry is Ownable, Pausable {
    * Returns the ids of all the given accounts's active assets
    * NOTE: can only be called by contract owner
    */
-  function getActiveAssetIdsOf(address owner) public view onlyOwner returns(uint[] memory) {
+  function getActiveAssetIdsOf(address owner) public view returns(uint[] memory) {
     return ownerToAssetIds[owner];
   }
 
