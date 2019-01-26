@@ -16,7 +16,7 @@ import "./TToken.sol";
  * NOTE: we don't divide the annualizedROI by 100 (precision) so the client must do so after calls to
  *       getCurrentProfit() and getProjectedProfit()
  *
- * @author Carlos Beltran <imthatcarlos>
+ * @author Carlos Beltran <imthatcarlos@gmail.com>
  */
 contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
   using SafeMath for uint;

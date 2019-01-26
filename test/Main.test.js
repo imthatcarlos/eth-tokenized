@@ -2,6 +2,7 @@ const util = require('ethereumjs-util');
 
 const VTToken = artifacts.require('./VTToken.sol');
 const TToken = artifacts.require('./TToken.sol');
+const PTToken = artifacts.require('./PTToken.sol');
 const Main = artifacts.require('./Main.sol');
 
 const shouldFail = require('./helpers/shouldFail');
@@ -16,12 +17,13 @@ const ANNUALIZED_ROI = 15; // %
 const TIMEFRAME_MONTHS = 12;
 
 let stableToken;
+let portfolioToken;
 let main;
 let assetData;
 let assetToken;
 
 async function setupMainContract(contractOwner) {
-  return await Main.new(stableToken.address, { from: contractOwner} );
+  return await Main.new(stableToken.address, portfolioToken.address, { from: contractOwner} );
 }
 
 function calculateProjectedProfit(value = VALUE_USD, timeframeMonths = 12) {
@@ -51,6 +53,7 @@ async function fundAsset(assetOwner) {
 contract('Main', (accounts) => {
   before(async ()=> {
     stableToken = await TToken.new();
+    portfolioToken = await PTToken.new();
     main = await setupMainContract(accounts[0]);
   });
 
@@ -102,8 +105,8 @@ contract('Main', (accounts) => {
       const b = await token.balanceOf(accounts[3]);
       assert.equal(web3.utils.fromWei(b.toString()), CAP);
 
-      // Main contract now has T tokens
-      const b2 = await stableToken.balanceOf(main.address);
+      // VTToken contract now has T tokens
+      const b2 = await stableToken.balanceOf(assetData.tokenAddress);
       assert.equal(web3.utils.fromWei(b2.toString()), investingStable);
 
       // investment record created

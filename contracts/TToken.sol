@@ -6,7 +6,8 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20Mintable.sol"; // need 
 /**
  * @title TToken
  * this is the the token that is pegged to USD...
- * @author Carlos Beltran <imthatcarlos>
+ *
+ * @author Carlos Beltran <imthatcarlos@gmail.com>
  */
 contract TToken is ERC20Mintable {
   string public name = "T Token";

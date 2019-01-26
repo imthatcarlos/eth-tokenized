@@ -7,7 +7,7 @@ import "./TToken.sol";
 contract AssetRegistry {
   using SafeMath for uint;
 
-  event AssetRecordCreated(address indexed owner, uint id, address tokenAddress);
+  event AssetRecordCreated(address tokenAddress, address assetOwner, uint id);
   event AssetFunded(uint id, address tokenAddress);
 
   struct Asset {
@@ -91,7 +91,7 @@ contract AssetRegistry {
     uint id = assets.push(record) - 1;
     ownerToAssetIds[owner].push(id);
 
-    emit AssetRecordCreated(owner, id, address(token));
+    emit AssetRecordCreated(address(token), owner, id);
   }
 
 
