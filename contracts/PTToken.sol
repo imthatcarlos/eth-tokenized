@@ -17,8 +17,6 @@ contract PTToken is ERC20Burnable, ERC20Mintable, ERC223 {
 
   uint public decimals = 18;  // allows us to divide and retain decimals
 
-  address private mainContractAddress;
-
   function approveFor(address payable _tokenAddress, address payable _investor, uint _amountTokens) public {
     // the investor must have already received PT tokens
     require(balanceOf(_investor) > 0);

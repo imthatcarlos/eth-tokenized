@@ -140,10 +140,22 @@ contract AssetRegistry is Pausable, Ownable {
     emit AssetFunded(_assetId, asset.tokenAddress);
   }
 
+  /**
+   * Updates the asset record to filled when fully invested
+   * @param _assetId Storage array id of the asset
+   * NOTE: this method may only be called by the Main contract (in _updateAssetLookup())
+   */
   function setAssetFilled(uint _assetId) public validAsset(_assetId) {
+    // only the Main contract may call
+    require(msg.sender == mainContractAddress);
+
     assets[_assetId].filled = true;
   }
 
+  /**
+   * Returns the storage array id of the asset with the given VT contract address
+   * @param _tokenAddress Address of VT contract
+   */
   function getAssetIdByToken(address _tokenAddress) public view returns(uint) {
     return tokenToAssetIds[_tokenAddress];
   }

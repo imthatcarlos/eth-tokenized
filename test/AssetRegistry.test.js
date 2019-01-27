@@ -2,7 +2,9 @@ const util = require('ethereumjs-util');
 
 const VTToken = artifacts.require('./VTToken.sol');
 const TToken = artifacts.require('./TToken.sol');
+const PTToken = artifacts.require('./PTToken.sol');
 const AssetRegistry = artifacts.require('./AssetRegistry.sol');
+const Main = artifacts.require('./Main.sol');
 
 const shouldFail = require('./helpers/shouldFail');
 const increaseTime = require('./helpers/increaseTime');
@@ -17,14 +19,21 @@ const TIMEFRAME_MONTHS = 12;
 
 let stableToken;
 let registry;
-
+let portfolioToken;
+let main;
 
 /**
  * Create instance of contracts
  */
-async function setupAssetContract(contractOwner) {
-  return await AssetRegistry.new(stableToken.address, { from: contractOwner });
-}
+ async function setupMainContract(contractOwner) {
+   return await Main.new(stableToken.address, portfolioToken.address, { from: contractOwner} );
+ }
+
+ async function setupAssetRegistryContract(contractOwner) {
+   const contract = await AssetRegistry.new(stableToken.address, main.address, { from: contractOwner } );
+   await main.setAssetRegistry(contract.address, { from: contractOwner });
+   return contract;
+ }
 
 function calculateProjectedProfit(value = VALUE_USD, timeframeMonths = 12) {
   return (value * (ANNUALIZED_ROI / 100)) * (timeframeMonths / 12);
@@ -46,11 +55,13 @@ async function addAsset(assetOwner) {
 contract('AssetRegistry', (accounts) => {
   before(async ()=> {
     stableToken = await TToken.new();
+    portfolioToken = await PTToken.new();
   });
 
   describe('addAsset()', () => {
     before(async ()=> {
-      registry = await setupAssetContract(accounts[0]);
+      main = await setupMainContract(accounts[0]);
+      registry = await setupAssetRegistryContract(accounts[0]);
     });
 
     it('adds the asset to storage', async() => {
@@ -64,11 +75,20 @@ contract('AssetRegistry', (accounts) => {
       const asset = await registry.getAssetById(1);
       assert.isNotNull(asset.tokenAddress, 'token contract was created');
     });
+
+    it('calls Main contract addFillableAsset(), increasing its storage count and updating the min value', async() => {
+      const count = await main.fillableAssetsCount.call();
+      assert.equal(count.toNumber(), '1', 'increased count of fillable assets');
+
+      const minVal = await main.minFillableAmount.call();
+      assert.equal(minVal.toNumber(), CAP, 'this asset is the closest to being filled');
+    });
   });
 
   describe('fundAsset()', () => {
     before(async ()=> {
-      registry = await setupAssetContract(accounts[0]);
+      main = await setupMainContract(accounts[0]);
+      registry = await setupAssetRegistryContract(accounts[0]);
       await addAsset(accounts[3]);
     });
 

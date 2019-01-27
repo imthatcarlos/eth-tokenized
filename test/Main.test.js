@@ -29,7 +29,9 @@ async function setupMainContract(contractOwner) {
 }
 
 async function setupAssetRegistryContract(contractOwner) {
-  return await AssetRegistry.new(stableToken.address, main.address, { from: contractOwner } );
+  const contract = await AssetRegistry.new(stableToken.address, main.address, { from: contractOwner } );
+  await main.setAssetRegistry(contract.address, { from: contractOwner });
+  return contract;
 }
 
 function calculateProjectedProfit(value = VALUE_USD, timeframeMonths = 12) {
@@ -120,6 +122,31 @@ contract('Main', (accounts) => {
       // investment record created
       const record = await main.getInvestmentById(1);
       assert.equal(record.owner, accounts[3], 'record added to storage');
+    });
+
+    it('calls setAssetFilled() in AssetRegistry when the asset is fully filled', async() => {
+      assetData = await assetRegistry.getAssetById(1);
+      assert.equal(assetData.filled, true, 'storage was updated')
+    });
+
+    it('does NOT call setAssetFilled() in AssetRegistry when the asset is NOT fully filled', async() => {
+      await addAsset(accounts[3]);
+      assetData = await assetRegistry.getAssetById(2);
+
+      const cap = web3.utils.fromWei(await assetToken.cap());
+      const investingStable = (cap / 2) * VALUE_PER_TOKEN_USD_CENTS; // not filling it
+      const investingTokens = web3.utils.toWei(investingStable.toString(), 'ether')
+      await stableToken.mint(accounts[4], investingTokens);
+      await stableToken.approve(main.address, investingTokens, { from: accounts[4] })
+      await main.investVehicle(investingTokens, assetData.tokenAddress, { from: accounts[4] });
+
+      assetData = await assetRegistry.getAssetById(2); // refresh
+      assert.equal(assetData.filled, false, 'storage was NOT updated')
+    });
+
+    it('off the last test, it does update minFillableAmount on Main', async() => {
+      const minVal = await main.minFillableAmount.call();
+      assert.equal(web3.utils.fromWei(minVal), (CAP / 2), 'storage was update to the remaining tokens of this asset');
     });
   });
 });
