@@ -155,40 +155,55 @@ contract Main is Ownable, Pausable {
     // sanity check
     require(fillableAssetsCount > 0, 'there are no assets to invest in');
 
-    // transfer the T tokens to the PT token contract
-    require(stableToken.transferFrom(msg.sender, address(portfolioToken), _amountStable));
+    // mint the equivalent of PT tokens as stable for them
+    portfolioToken.mint(msg.sender, _amountStable);
 
     // calculate total amount of tokens available to invest in VT contracts
     // NOTE: algo changes dramatically if this varies per token contract
     uint totalTokens = _amountStable.div(VALUE_PER_VT_TOKENS_CENTS);
 
-    // the user has enough tokens to cover all assets EQUALLY by filling the asset closest to being filled
-    if (fillableAssetsCount.mul(minFillableAmount) < totalTokens) {
-      uint amountStableEach = totalTokens.div(fillableAssetsCount);
-
-      // for all our assets, check if it's fillable and then fill it
-      for (uint i = 1; i < fillableAssets.length; i++) {
-        // if this asset is indeed fillable, DO IT
-        if (fillableAssets[i].tokenAddress != (address(0))) {
-          investVehicle(amountStableEach, fillableAssets[i].tokenAddress);
-        }
-      }
-    } else {
-      // need a strategy here...
-      revert();
+    // recursively invest in all assets with a given strategy
+    // TODO: the calculations could be done recursively and THEN we iterate and invest... extra iteration though...
+    uint tempTotal = totalTokens;
+    while(tempTotal != 0) {
+      tempTotal = _recursiveInvestPortfolio(_amountStable, tempTotal);
     }
-
-    // mint PT tokens for them
-    portfolioToken.mint(msg.sender, _amountStable); // mint the equivalent of PT tokens as stable
 
     // add to storage
     _createInvestmentRecord(
       TokenType.Portfolio,
       _amountStable,
-      _amountStable,
+      totalTokens,
       address(portfolioToken),
       0
     );
+  }
+
+  function _recursiveInvestPortfolio(uint _amountStable, uint _totalTokens) internal returns (uint) {
+    // HAPPY TRAIL: the user has enough tokens to cover all assets EQUALLY AND filling the asset closest to being filled
+    uint minFillableRound = fillableAssetsCount.mul(minFillableAmount);
+
+    if (minFillableRound <= _totalTokens) {
+      uint amountTokensEach = _totalTokens.div(fillableAssetsCount);
+      uint amountStableEach = _amountStable.div(fillableAssetsCount);
+
+      // iterate over our asset lookup and if the element is present, it is because it's still fillable
+      uint amountInvested = 0;
+      for (uint i = 1; i <= fillableAssets.length; i++) {
+        if (fillableAssets[i].tokenAddress != (address(0))) {
+          _fillAsset(amountStableEach, amountTokensEach, fillableAssets[i].tokenAddress);
+          amountInvested.add(amountTokensEach);
+        }
+      }
+
+      // they should be equal if all were invested in...
+      if (amountInvested == minFillableAmount) {
+        return _totalTokens.sub(amountInvested);
+      }
+    } else {
+      // need another strategy... try doing less than minFillableRound
+      return 0;
+    }
   }
 
   // function redeemVehicle() public {
@@ -278,6 +293,23 @@ contract Main is Ownable, Pausable {
     emit InvestmentRecordCreated(_tokenAddress, msg.sender, id);
   }
 
+  function _fillAsset(uint _amountStable, uint _amountTokens, address payable _tokenAddress) internal {
+    VTToken tokenContract = VTToken(_tokenAddress);
+
+    // sanity check, make sure we don't overflow
+    require(tokenContract.cap() >= tokenContract.totalSupply().add(_amountTokens));
+
+    // transfer the T tokens to the VT token contract
+    require(stableToken.transferFrom(msg.sender, _tokenAddress, _amountStable));
+
+    // mint VT tokens for them, but PT contract holds and records the allowance of VT between itself and the sender
+    tokenContract.mint(address(portfolioToken), _amountTokens);
+    portfolioToken.approveFor(_tokenAddress, msg.sender, _amountTokens);
+
+    // update our records of token supplies
+    _updateAssetLookup(_tokenAddress, (tokenContract.cap().sub(tokenContract.totalSupply())));
+  }
+
   // update storage mappings that reflect state of token contract funding
   function _updateAssetLookup(address _tokenAddress, uint remainingSupply) internal {
     // if this contract is now fully invested, emit an event
@@ -305,24 +337,6 @@ contract Main is Ownable, Pausable {
 
       if (remainingSupply < minFillableAmount) {
         minFillableAmount = remainingSupply;
-      }
-    }
-  }
-
-  /// @dev Returns the max value in an array.
-  /// @param self Storage array containing uint256 type variables
-  /// @return maxValue The highest value in the array
-  /// https://github.com/Modular-Network/ethereum-libraries/contracts/Array256Lib.sol
-  function _getMax(uint256[] storage self) internal view returns(uint256 maxValue) {
-    assembly {
-      mstore(0x60,self_slot)
-      maxValue := sload(keccak256(0x60,0x20))
-
-      for { let i := 0 } lt(i, sload(self_slot)) { i := add(i, 1) } {
-        switch gt(sload(add(keccak256(0x60,0x20),i)), maxValue)
-        case 1 {
-          maxValue := sload(add(keccak256(0x60,0x20),i))
-        }
       }
     }
   }
