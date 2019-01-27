@@ -35,9 +35,9 @@ module.exports = function(deployer, _network, _accounts) {
 
   // deploy contract
   deployer.deploy(TToken).then(() => {
-    return deployer.deploy(PTToken).then(() => {
-      return deployer.deploy(AssetRegistry, TToken.address).then(() => {
-        return deployer.deploy(Main, TToken.address, PTToken.address).then(() => {
+    return deployer.deploy(PTToken).then((portfolioToken) => {
+      return deployer.deploy(Main, TToken.address, PTToken.address).then(() => {
+        return deployer.deploy(AssetRegistry, TToken.address, Main.address).then(() => {
           data[network]["Main"] = Main.address;
           data[network]["AssetRegistry"] = AssetRegistry.address;
           data[network]["TToken"] = TToken.address;
@@ -49,6 +49,11 @@ module.exports = function(deployer, _network, _accounts) {
           // write to src/ directory as well
           const srcFilePath = path.join(__dirname, "./../src/json/contracts.json");
           fs.writeFileSync(srcFilePath, json, "utf8");
+
+          // give Main contract minting
+          portfolioToken.addMinter(Main.address).then(() => {
+            //console.log('gave minting permission of PTToken to Main contract');
+          });
         });
       });
     })

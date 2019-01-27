@@ -4,6 +4,7 @@ const VTToken = artifacts.require('./VTToken.sol');
 const TToken = artifacts.require('./TToken.sol');
 const PTToken = artifacts.require('./PTToken.sol');
 const Main = artifacts.require('./Main.sol');
+const AssetRegistry = artifacts.require('./AssetRegistry.sol')
 
 const shouldFail = require('./helpers/shouldFail');
 const increaseTime = require('./helpers/increaseTime');
@@ -19,6 +20,7 @@ const TIMEFRAME_MONTHS = 12;
 let stableToken;
 let portfolioToken;
 let main;
+let assetRegistry;
 let assetData;
 let assetToken;
 
@@ -26,12 +28,16 @@ async function setupMainContract(contractOwner) {
   return await Main.new(stableToken.address, portfolioToken.address, { from: contractOwner} );
 }
 
+async function setupAssetRegistryContract(contractOwner) {
+  return await AssetRegistry.new(stableToken.address, main.address, { from: contractOwner } );
+}
+
 function calculateProjectedProfit(value = VALUE_USD, timeframeMonths = 12) {
   return (value * (ANNUALIZED_ROI / 100)) * (timeframeMonths / 12);
 }
 
 async function addAsset(assetOwner) {
-  await main.addAsset(
+  await assetRegistry.addAsset(
     assetOwner,
     ASSET_NAME,
     VALUE_USD,
@@ -39,15 +45,16 @@ async function addAsset(assetOwner) {
     ANNUALIZED_ROI,
     (VALUE_USD + calculateProjectedProfit()),
     TIMEFRAME_MONTHS,
-    VALUE_PER_TOKEN_USD_CENTS
+    VALUE_PER_TOKEN_USD_CENTS,
+    { from: assetOwner }
   );
 }
 
 async function fundAsset(assetOwner) {
   const amnt = web3.utils.toWei((VALUE_USD + calculateProjectedProfit()).toString(), 'ether');
   await stableToken.mint(assetOwner, amnt);
-  await stableToken.approve(main.address, amnt, { from: assetOwner});
-  await main.fundAsset(amnt, 1, { from: assetOwner });
+  await stableToken.approve(assetRegistry.address, amnt, { from: assetOwner});
+  await assetRegistry.fundAsset(amnt, 1, { from: assetOwner });
 }
 
 contract('Main', (accounts) => {
@@ -55,6 +62,7 @@ contract('Main', (accounts) => {
     stableToken = await TToken.new();
     portfolioToken = await PTToken.new();
     main = await setupMainContract(accounts[0]);
+    assetRegistry = await setupAssetRegistryContract(accounts[0]);
   });
 
   describe('constructor()', () => {
@@ -66,7 +74,7 @@ contract('Main', (accounts) => {
   describe('investVehicle()', () => {
     before(async() => {
       await addAsset(accounts[2]);
-      assetData = await main.getAssetById(1);
+      assetData = await assetRegistry.getAssetById(1);
       assetToken = await VTToken.at(assetData.tokenAddress);
     });
 

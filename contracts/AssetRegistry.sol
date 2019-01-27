@@ -1,10 +1,11 @@
 pragma solidity 0.5.0;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 import "./VTToken.sol";
 import "./TToken.sol";
 
-contract AssetRegistry {
+contract AssetRegistry is Pausable {
   using SafeMath for uint;
 
   event AssetRecordCreated(address tokenAddress, address assetOwner, uint id);
@@ -17,6 +18,7 @@ contract AssetRegistry {
   }
 
   TToken private stableToken;
+  address private mainContractAddress;
 
   Asset[] private assets;
   mapping (address => uint[]) private ownerToAssetIds;
@@ -36,8 +38,9 @@ contract AssetRegistry {
     _;
   }
 
-  constructor(address _stableTokenAddress) public {
+  constructor(address _stableTokenAddress, address _mainContractAddress) public {
     stableToken = TToken(_stableTokenAddress);
+    mainContractAddress = _mainContractAddress;
 
     // take care of zero-index for storage array
     assets.push(Asset({
@@ -80,6 +83,9 @@ contract AssetRegistry {
       _timeframeMonths,
       _valuePerTokenCents
     );
+
+    // so the main contract can mint
+    token.addMinter(mainContractAddress);
 
     Asset memory record = Asset({
       owner: owner,

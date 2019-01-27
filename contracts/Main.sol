@@ -19,6 +19,7 @@ contract Main is Ownable, Pausable {
   //using Array256Lib for uint256[];
 
   event InvestmentRecordCreated(address indexed tokenAddress, address investmentOwner, uint id);
+  event AssetFullyInvested(address indexed tokenAddress, address investmentOwner);
 
   enum TokenType { Vehicle, Portfolio }
 
@@ -37,9 +38,10 @@ contract Main is Ownable, Pausable {
 
   Investment[] private investments;
   mapping (address => uint[]) private activeInvestmentIds;
-  mapping (address => uint) private assetContractsRemainingTokens;
-  mapping (address => bool) private assetContractsFullyFunded;
-  uint[] test = new uint[](3);
+
+  // needed to ease difficulty of calculating Portfolio investments
+  mapping (address => uint) private tokenSuppliesArrIds;
+  uint[] private tokenSupplies;
 
   modifier hasActiveInvestment() {
     require(activeInvestmentIds[msg.sender].length != 0, "must have an active investment");
@@ -54,7 +56,7 @@ contract Main is Ownable, Pausable {
   /**
    * Contract constructor
    * @dev To avoid bloating the constructor, deploy the PTToken contract off-chain,
-   *      create reference here, and change that contract owner to this contract so we can mint
+   *      create reference here, and give minting permission to this contract
    * @param _stableTokenAddress Address of T token
    * @param _portfolioTokenAddress Address of PT token
    */
@@ -62,7 +64,7 @@ contract Main is Ownable, Pausable {
     stableToken = TToken(_stableTokenAddress);
     portfolioToken = PTToken(_portfolioTokenAddress);
 
-    // take care of zero-index for storage array
+    // take care of zero-index for storage arrays
     investments.push(Investment({
       tokenType: TokenType.Vehicle,
       owner: address(0),
@@ -72,6 +74,8 @@ contract Main is Ownable, Pausable {
       createdAt: 0,
       timeframeMonths: 0
     }));
+
+    tokenSupplies.push(0);
   }
 
   /**
@@ -104,15 +108,8 @@ contract Main is Ownable, Pausable {
     // mint VT tokens for them
     tokenContract.mint(msg.sender, amountTokens);
 
-    // update storage mappings that reflect state of token contract funding
-    uint tokenCap = tokenContract.cap();
-    uint tokenSupply = tokenContract.totalSupply();
-    if (tokenCap == tokenSupply) {
-      assetContractsFullyFunded[_tokenAddress] = true;
-      assetContractsRemainingTokens[_tokenAddress] = 0;
-    } else {
-      assetContractsRemainingTokens[_tokenAddress] = tokenCap - tokenSupply;
-    }
+    // update our records of token supplies
+    _updateTokenSupplies(_tokenAddress, tokenContract.cap(), tokenContract.totalSupply());
   }
 
   /**
@@ -236,11 +233,37 @@ contract Main is Ownable, Pausable {
     emit InvestmentRecordCreated(_tokenAddress, msg.sender, id);
   }
 
+  function _updateTokenSupplies(
+    address _tokenAddress,
+    uint _tokenCap,
+    uint _tokenSupply
+  ) internal {
+    // update storage mappings that reflect state of token contract funding
+    uint remaining = _tokenCap.sub(_tokenSupply);
+    uint id;
+
+    // init storage if needed
+    if (tokenSuppliesArrIds[_tokenAddress] == 0) {
+      id = tokenSupplies.push(remaining) - 1;
+      tokenSuppliesArrIds[_tokenAddress] = id;
+    } else {
+      id = tokenSuppliesArrIds[_tokenAddress];
+    }
+
+    // if this contract is now fully invested, emit an event
+    if (remaining == 0) {
+      emit AssetFullyInvested(_tokenAddress, msg.sender);
+    }
+
+    // update storage
+    tokenSupplies[id] = remaining;
+  }
+
   /// @dev Returns the max value in an array.
   /// @param self Storage array containing uint256 type variables
   /// @return maxValue The highest value in the array
   /// https://github.com/Modular-Network/ethereum-libraries/contracts/Array256Lib.sol
-  function getMax(uint256[] storage self) internal view returns(uint256 maxValue) {
+  function _getMax(uint256[] storage self) internal view returns(uint256 maxValue) {
     assembly {
       mstore(0x60,self_slot)
       maxValue := sload(keccak256(0x60,0x20))
