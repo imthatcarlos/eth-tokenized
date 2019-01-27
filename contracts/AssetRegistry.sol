@@ -1,11 +1,13 @@
 pragma solidity 0.5.0;
 
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./VTToken.sol";
 import "./TToken.sol";
+import "./Main.sol";
 
-contract AssetRegistry is Pausable {
+contract AssetRegistry is Pausable, Ownable {
   using SafeMath for uint;
 
   event AssetRecordCreated(address tokenAddress, address assetOwner, uint id);
@@ -14,6 +16,7 @@ contract AssetRegistry is Pausable {
   struct Asset {
     address owner;
     address payable tokenAddress;
+    bool filled;
     bool funded;
   }
 
@@ -22,6 +25,7 @@ contract AssetRegistry is Pausable {
 
   Asset[] private assets;
   mapping (address => uint[]) private ownerToAssetIds;
+  mapping (address => uint) private tokenToAssetIds;
 
   modifier hasActiveAsset() {
     require(ownerToAssetIds[msg.sender].length != 0, "must have an active asset");
@@ -46,8 +50,13 @@ contract AssetRegistry is Pausable {
     assets.push(Asset({
       owner: address(0),
       tokenAddress: address(0),
+      filled: false,
       funded: false
     }));
+  }
+
+  function setMainContractAddress(address _contractAddress) public onlyOwner {
+    mainContractAddress = _contractAddress;
   }
 
   /**
@@ -87,15 +96,20 @@ contract AssetRegistry is Pausable {
     // so the main contract can mint
     token.addMinter(mainContractAddress);
 
+    // so main contract is always in sync
+    Main(mainContractAddress).addFillableAsset(address(token), _cap);
+
     Asset memory record = Asset({
       owner: owner,
       tokenAddress: address(token),
+      filled: false,
       funded: false
     });
 
     // add the record to the storage array and push the index to the hashmap
     uint id = assets.push(record) - 1;
     ownerToAssetIds[owner].push(id);
+    tokenToAssetIds[address(token)] = id;
 
     emit AssetRecordCreated(address(token), owner, id);
   }
@@ -112,7 +126,7 @@ contract AssetRegistry is Pausable {
    * @param _assetId Asset id
    */
 
-  function fundAsset(uint _amountStable, uint _assetId) public onlyAssetOwner(_assetId) validAsset(_assetId) {
+  function fundAsset(uint _amountStable, uint _assetId) public onlyAssetOwner(_assetId) {
     Asset storage asset = assets[_assetId];
 
     // sanity check
@@ -124,6 +138,14 @@ contract AssetRegistry is Pausable {
     asset.funded = true;
 
     emit AssetFunded(_assetId, asset.tokenAddress);
+  }
+
+  function setAssetFilled(uint _assetId) public validAsset(_assetId) {
+    assets[_assetId].filled = true;
+  }
+
+  function getAssetIdByToken(address _tokenAddress) public view returns(uint) {
+    return tokenToAssetIds[_tokenAddress];
   }
 
   /**
@@ -152,11 +174,22 @@ contract AssetRegistry is Pausable {
    * Returns details of the Asset with the given id
    * @param _id Asset id
    */
-  function getAssetById(uint _id) public view validAsset(_id) returns (address owner, address tokenAddress, bool funded) {
+  function getAssetById(uint _id)
+    public
+    view
+    validAsset(_id)
+    returns (
+      address owner,
+      address tokenAddress,
+      bool filled,
+      bool funded
+    )
+  {
     Asset storage asset = assets[_id];
 
     owner = asset.owner;
     tokenAddress = asset.tokenAddress;
+    filled = asset.filled;
     funded = asset.funded;
   }
 }
