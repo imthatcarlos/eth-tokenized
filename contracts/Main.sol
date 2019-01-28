@@ -192,33 +192,6 @@ contract Main is Ownable, Pausable {
     );
   }
 
-  function _recursiveInvestPortfolio(uint _amountStable, uint _totalTokens) internal returns (uint) {
-    // HAPPY TRAIL: the user has enough tokens to cover all assets EQUALLY AND filling the asset closest to being filled
-    uint minFillableRound = fillableAssetsCount.mul(minFillableAmount);
-
-    if (minFillableRound <= _totalTokens) {
-      uint amountTokensEach = _totalTokens.div(fillableAssetsCount);
-      uint amountStableEach = _amountStable.div(fillableAssetsCount);
-
-      // iterate over our asset lookup and if the element is present, it is because it's still fillable
-      uint amountInvested = 0;
-      for (uint i = 1; i <= fillableAssets.length; i++) {
-        if (fillableAssets[i].tokenAddress != (address(0))) {
-          _fillAssetForPortfolio(amountStableEach, amountTokensEach, fillableAssets[i].tokenAddress);
-          amountInvested.add(amountTokensEach);
-        }
-      }
-
-      // they should be equal if all were invested in...
-      if (amountInvested == minFillableAmount) {
-        return _totalTokens.sub(amountInvested);
-      }
-    } else {
-      // need another strategy... try doing less than minFillableRound
-      return 0;
-    }
-  }
-
   // function redeemVehicle() public {
   //
   // }
@@ -306,6 +279,35 @@ contract Main is Ownable, Pausable {
     emit InvestmentRecordCreated(_tokenAddress, msg.sender, id);
   }
 
+  function _recursiveInvestPortfolio(uint _amountStable, uint _totalTokens) internal returns (uint) {
+    // HAPPY PATH: the user has enough tokens to cover all assets EQUALLY AND filling the asset closest to being filled
+    uint minFillableRound = fillableAssetsCount.mul(minFillableAmount);
+
+    // OK PATH: the user has enough tokens to cover all assets evenly, even if not filling one
+    uint amountTokensEach = _totalTokens.div(fillableAssetsCount);
+
+    if (minFillableRound <= _totalTokens || amountTokensEach <= minFillableAmount) {
+      uint amountStableEach = _amountStable.div(fillableAssetsCount);
+
+      // iterate over our asset lookup and if the element is present, it is because it's still fillable
+      uint amountInvested = 0;
+      for (uint i = 1; i <= (fillableAssets.length - 1); i++) {
+        if (fillableAssets[i].tokenAddress != (address(0))) {
+          _fillAssetForPortfolio(amountStableEach, amountTokensEach, fillableAssets[i].tokenAddress);
+          amountInvested = amountInvested.add(amountTokensEach);
+        }
+      }
+
+      // they should be equal if all were invested in...
+      if (amountInvested == minFillableAmount) {
+        return _totalTokens.sub(amountInvested);
+      }
+    } else {
+      // need another strategy... try doing less than minFillableRound
+      return 0;
+    }
+  }
+
   /**
    * Fills a Portfolio investment order for a particular VT contract
    * @dev To avoid overflow, we preemptively refuse to fill if the amount puts the token contract over its cap
@@ -324,9 +326,9 @@ contract Main is Ownable, Pausable {
     // transfer the T tokens to the VT token contract
     require(stableToken.transferFrom(msg.sender, _tokenAddress, _amountStable));
 
-    // mint VT tokens for them, but PT contract holds and records the allowance of VT between itself and the sender
+    // mint VT tokens for them, but PT contract holds and records the allowance of VT between PT and the sender
     tokenContract.mint(address(portfolioToken), _amountTokens);
-    portfolioToken.approveFor(_tokenAddress, msg.sender, _amountTokens);
+    require(portfolioToken.approveFor(_tokenAddress, msg.sender, _amountTokens));
 
     // update our records of token supplies
     _updateAssetLookup(_tokenAddress, (tokenContract.cap().sub(tokenContract.totalSupply())));

@@ -50,7 +50,7 @@ module.exports = function(deployer, _network, _accounts) {
           const srcFilePath = path.join(__dirname, "./../src/json/contracts.json");
           fs.writeFileSync(srcFilePath, json, "utf8");
 
-          // give Main contract minting
+          // give Main contract minting permission
           portfolioToken.addMinter(Main.address);
 
           // for ref

@@ -21,8 +21,13 @@ let stableToken;
 let portfolioToken;
 let main;
 let assetRegistry;
+
 let assetData;
 let assetToken;
+let assetData2;
+let assetToken2;
+let assetData3;
+let assetToken3;
 
 async function setupMainContract(contractOwner) {
   return await Main.new(stableToken.address, portfolioToken.address, { from: contractOwner} );
@@ -64,6 +69,10 @@ contract('Main', (accounts) => {
     stableToken = await TToken.new();
     portfolioToken = await PTToken.new();
     main = await setupMainContract(accounts[0]);
+
+    // give Main contract minting permission
+    await portfolioToken.addMinter(main.address);
+
     assetRegistry = await setupAssetRegistryContract(accounts[0]);
   });
 
@@ -147,6 +156,146 @@ contract('Main', (accounts) => {
     it('off the last test, it does update minFillableAmount on Main', async() => {
       const minVal = await main.minFillableAmount.call();
       assert.equal(web3.utils.fromWei(minVal), (CAP / 2), 'storage was update to the remaining tokens of this asset');
+    });
+  });
+
+  describe('investPortfolio()', () => {
+    before(async() => {
+      // refresh contracts
+      stableToken = await TToken.new();
+      portfolioToken = await PTToken.new();
+      main = await setupMainContract(accounts[0]);
+      await portfolioToken.addMinter(main.address);
+      assetRegistry = await setupAssetRegistryContract(accounts[0]);
+    });
+
+    it('reverts when there are no assets to invest in', async() => {
+      const cap = web3.utils.toWei(CAP.toString(), 'ether');
+      await shouldFail.reverting(main.investPortfolio(cap, { from: accounts[4] }));
+    });
+
+    describe('context: happy path of evenly invested assets', () => {
+      before(async() => {
+        // now prepare scenarios
+        await addAsset(accounts[2]);
+        await addAsset(accounts[3]);
+
+        assetData = await assetRegistry.getAssetById(1);
+        assetToken = await VTToken.at(assetData.tokenAddress);
+
+        assetData2 = await assetRegistry.getAssetById(2);
+        assetToken2 = await VTToken.at(assetData2.tokenAddress);
+      });
+
+      it('mints an equal amount of PT tokens as T tokens invested', async() => {
+        const cap = web3.utils.fromWei(await assetToken.cap());
+        // acquiring total cap of both tokens
+        const investingStable = (cap * 2) * VALUE_PER_TOKEN_USD_CENTS;
+        const investingTokens = web3.utils.toWei(investingStable.toString(), 'ether');
+
+        await stableToken.mint(accounts[4], investingTokens);
+        await stableToken.approve(main.address, investingTokens, { from: accounts[4] });
+
+        await main.investPortfolio(investingTokens, { from: accounts[4] });
+
+        const b = await portfolioToken.balanceOf(accounts[4]);
+        assert.equal(b, investingTokens, 'user now has PT tokens');
+      });
+
+      it('invests those T tokens into the respective VT contracts, evenly', async() => {
+        var b = await stableToken.balanceOf(assetData.tokenAddress);
+        b = web3.utils.fromWei(b.toString());
+        var b2 = await stableToken.balanceOf(assetData2.tokenAddress);
+        b2 = web3.utils.fromWei(b2.toString());
+
+        assert.equal(b, VALUE_USD, 'asset has T tokens equal to its total USD value');
+        assert.equal(b, b2 , 'assets were invested in evenly');
+      });
+
+      it('updates the lookup of fillable assets count to 0', async() => {
+        const count = await main.fillableAssetsCount.call();
+        assert.equal(count, '0', 'storage was updated');
+      });
+
+      it('updates the filled state of both assets', async() => {
+        assetData = await assetRegistry.getAssetById(1);
+        assetData2 = await assetRegistry.getAssetById(2);
+
+        assert.equal(assetData.filled, true, 'storage was updated');
+        assert.equal(assetData2.filled, true, 'storage was updated');
+      });
+
+      it('mints VT tokens for the PT contract', async() => {
+        var b = await assetToken.balanceOf(portfolioToken.address);
+        b = web3.utils.fromWei(b.toString());
+        var b2 = await assetToken2.balanceOf(portfolioToken.address);
+        b2 = web3.utils.fromWei(b2.toString());
+
+        assert.equal(b, CAP, 'PT contract balance of VT contract 1 is the cap');
+        assert.equal(b, b2, 'PT contract has equal balance in both VT contracts');
+      });
+
+      it('logs an allowance of VT between the PT contract and the investor equal to VT tokens minted', async() => {
+        var b = await assetToken.allowance(portfolioToken.address, accounts[4]);
+        b = web3.utils.fromWei(b.toString());
+        var b2 = await assetToken2.allowance(portfolioToken.address, accounts[4]);
+        b2 = web3.utils.fromWei(b2.toString());
+
+        assert.equal(b, CAP, 'PT contract allowance of VT tokens for the investor is the token cap');
+        assert.equal(b, b2, 'allowance is the same on both contracts');
+      });
+
+      describe('context: when more assets are added', () => {
+        before(async() => {
+          // add new assets
+          await addAsset(accounts[4]);
+          await addAsset(accounts[5]);
+          await addAsset(accounts[6]);
+
+          assetData = await assetRegistry.getAssetById(3);
+          assetToken = await VTToken.at(assetData.tokenAddress);
+
+          assetData2 = await assetRegistry.getAssetById(4);
+          assetToken2 = await VTToken.at(assetData2.tokenAddress);
+
+          assetData3 = await assetRegistry.getAssetById(5);
+          assetToken3 = await VTToken.at(assetData3.tokenAddress);
+        });
+
+        it('distributes T tokens correctly', async() => {
+          const cap = web3.utils.fromWei(await assetToken.cap());
+          // acquiring total cap of one token, to be spread evenly across 3 contracts
+          const investingStable = cap * VALUE_PER_TOKEN_USD_CENTS;
+          const investingTokens = web3.utils.toWei(investingStable.toString(), 'ether');
+
+          await stableToken.mint(accounts[7], investingTokens);
+          await stableToken.approve(main.address, investingTokens, { from: accounts[7] });
+
+          await main.investPortfolio(investingTokens, { from: accounts[7] });
+
+          var b = await stableToken.balanceOf(assetData.tokenAddress);
+          var b2 = await stableToken.balanceOf(assetData2.tokenAddress);
+
+          assert.equal(parseFloat(web3.utils.fromWei(b).toString()).toFixed(3), (VALUE_USD/3).toFixed(3), 'asset has T tokens equal to a third of its USD value');
+          assert.equal(web3.utils.fromWei(b), web3.utils.fromWei(b2) , 'assets were invested in evenly');
+        });
+
+        it('logs an equal allowance on all 3 VT contracts', async() => {
+          var b = await assetToken.allowance(portfolioToken.address, accounts[7]);
+          b = web3.utils.fromWei(b.toString());
+          var b2 = await assetToken2.allowance(portfolioToken.address, accounts[7]);
+          b2 = web3.utils.fromWei(b2.toString());
+          var b3 = await assetToken3.allowance(portfolioToken.address, accounts[7]);
+          b3 = web3.utils.fromWei(b3.toString());
+
+          assert.equal(b, b2, 'allowance is the same on all three contracts');
+          assert.equal(b3, b3, 'allowance is the same on all three contracts');
+        });
+      });
+    });
+
+    describe('context: un-even investments', () => {
+
     });
   });
 });

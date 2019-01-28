@@ -17,10 +17,17 @@ contract PTToken is ERC20Burnable, ERC20Mintable, ERC223 {
 
   uint public decimals = 18;  // allows us to divide and retain decimals
 
-  function approveFor(address payable _tokenAddress, address payable _investor, uint _amountTokens) public {
+  function approveFor(
+    address payable _tokenAddress,
+    address payable _investor,
+    uint _amountTokens
+  ) public returns(bool) {
     // the investor must have already received PT tokens
     require(balanceOf(_investor) > 0);
 
-    VTToken(_tokenAddress).approve(_investor, _amountTokens);
+    // log an allowance for future ref
+    require(VTToken(_tokenAddress).approve(_investor, _amountTokens));
+
+    return true;
   }
 }
