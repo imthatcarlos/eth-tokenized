@@ -30,4 +30,33 @@ contract PTToken is ERC20Burnable, ERC20Mintable, ERC223 {
 
     return true;
   }
+
+  // /**
+  //  * Allows a token holder to claim their profits once this contract has been funded
+  //  * Burns the sender's PT tokens
+  //  */
+  // function claimFundsAndBurn() public activeInvestment {
+  //   // sanity check - make sure we're funded
+  //   require(stableToken.balanceOf(address(this)) > 0);
+  //
+  //   // transfer T tokens to the investor equal to the current profit
+  //   // NOTE: we are assuming there is no ceiling to the possible profit, meaning not greater than getProjectedProfit()
+  //   require(stableToken.transfer(msg.sender, getCurrentProfit()));
+  //
+  //   // burn their tokens
+  //   burn(balanceOf(msg.sender));
+  //
+  //   if (totalSupply() == 0) {
+  //     // if everyone has claimed their profits, we should have 0 supply of tokens
+  //     uint balanceStable = stableToken.balanceOf(address(this));
+  //
+  //     // and we have some T tokens remaining (most likely a tiny fraction < 1) send them to the asset owner
+  //     if (balanceStable > 0) {
+  //       require(stableToken.transfer(assetOwner, balanceStable));
+  //     }
+  //
+  //     // and terminate the contract, sending any remaining ETH to the asset owner
+  //     selfdestruct(assetOwner);
+  //   }
+  // }
 }

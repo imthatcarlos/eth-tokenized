@@ -123,6 +123,9 @@ contract Main is Ownable, Pausable {
     }
 
     fillableAssetsCount = fillableAssetsCount.add(1);
+
+    // hacky: allows the token contract contract to mint T tokens it needs to satisfy investor claims
+    stableToken.addMinter(_tokenAddress);
   }
 
   /**

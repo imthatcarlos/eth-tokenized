@@ -111,15 +111,23 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
 
   /**
    * Allows a token holder to claim their profits once this contract has been funded
+   * NOTE: hacky: we don't require this contract to have enough T tokens to cover claims, we mint any T tokens we need
    * Burns the sender's VT tokens
    */
   function claimFundsAndBurn() public activeInvestment {
     // sanity check - make sure we're funded
-    require(stableToken.balanceOf(address(this)) > 0);
+    // require(stableToken.balanceOf(address(this)) > 0);
+
+    // hacky: if this contract has not been sufficiently funded, mint T tokens to cover the investor's claim
+    uint investorClaim = getCurrentProfit();
+    uint stableBalance = stableToken.balanceOf(address(this));
+    if (stableBalance < investorClaim) {
+      stableToken.mint(address(this), investorClaim.sub(stableBalance));
+    }
 
     // transfer T tokens to the investor equal to the current profit
     // NOTE: we are assuming there is no ceiling to the possible profit, meaning not greater than getProjectedProfit()
-    require(stableToken.transfer(msg.sender, getCurrentProfit()));
+    require(stableToken.transfer(msg.sender, investorClaim));
 
     // burn their tokens
     burn(balanceOf(msg.sender));
