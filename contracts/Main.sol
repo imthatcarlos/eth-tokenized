@@ -192,14 +192,6 @@ contract Main is Ownable, Pausable {
     );
   }
 
-  // function redeemVehicle() public {
-  //
-  // }
-  //
-  // function redeemPortfolio() public {
-  //
-  // }
-
   /**
    * Returns the ids of all the sender's active assets
    */
