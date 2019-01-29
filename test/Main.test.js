@@ -89,82 +89,82 @@ contract('Main', (accounts) => {
     });
   });
 
-  // describe('investVehicle()', () => {
-  //   before(async() => {
-  //     await addAsset(accounts[2]);
-  //     assetData = await assetRegistry.getAssetById(1);
-  //     assetToken = await VTToken.at(assetData.tokenAddress);
-  //   });
-  //
-  //   it('reverts when trying to invest more T tokens than there are VT tokens', async() => {
-  //     const cap = web3.utils.fromWei(await assetToken.cap());
-  //     const investingStable = cap * VALUE_PER_TOKEN_USD_CENTS;
-  //     const investingTokens = web3.utils.toWei(investingStable.toString(), 'ether')
-  //
-  //     await shouldFail.reverting(main.investVehicle((investingTokens + 1), assetData.tokenAddress, { from: accounts[3] }));
-  //   });
-  //
-  //   it('reverts when the sender does not have T tokens', async() => {
-  //     const cap = web3.utils.fromWei(await assetToken.cap());
-  //     const investingStable = cap * VALUE_PER_TOKEN_USD_CENTS;
-  //     const investingTokens = web3.utils.toWei(investingStable.toString(), 'ether')
-  //
-  //     await shouldFail.reverting(main.investVehicle(investingTokens, assetData.tokenAddress, { from: accounts[3] }));
-  //   });
-  //
-  //   it('allows the sender to invest in an asset and receive VT tokens', async() => {
-  //     const cap = web3.utils.fromWei(await assetToken.cap());
-  //     const investingStable = cap * VALUE_PER_TOKEN_USD_CENTS;
-  //     const investingTokens = web3.utils.toWei(investingStable.toString(), 'ether')
-  //
-  //     // user acquires T tokens
-  //     await stableToken.mint(accounts[3], investingTokens);
-  //
-  //     // user approves transfer of T tokens
-  //     await stableToken.approve(main.address, investingTokens, { from: accounts[3] })
-  //
-  //     // user invests T tokens
-  //     await main.investVehicle(investingTokens, assetData.tokenAddress, { from: accounts[3] });
-  //
-  //     // user now has VT tokens
-  //     const token = await VTToken.at(assetData.tokenAddress);
-  //     const b = await token.balanceOf(accounts[3]);
-  //     assert.equal(web3.utils.fromWei(b.toString()), CAP);
-  //
-  //     // VTToken contract now has T tokens
-  //     const b2 = await stableToken.balanceOf(assetData.tokenAddress);
-  //     assert.equal(web3.utils.fromWei(b2.toString()), investingStable);
-  //
-  //     // investment record created
-  //     const record = await main.getInvestmentById(1);
-  //     assert.equal(record.owner, accounts[3], 'record added to storage');
-  //   });
-  //
-  //   it('calls setAssetFilled() in AssetRegistry when the asset is fully filled', async() => {
-  //     assetData = await assetRegistry.getAssetById(1);
-  //     assert.equal(assetData.filled, true, 'storage was updated')
-  //   });
-  //
-  //   it('does NOT call setAssetFilled() in AssetRegistry when the asset is NOT fully filled', async() => {
-  //     await addAsset(accounts[3]);
-  //     assetData = await assetRegistry.getAssetById(2);
-  //
-  //     const cap = web3.utils.fromWei(await assetToken.cap());
-  //     const investingStable = (cap / 2) * VALUE_PER_TOKEN_USD_CENTS; // not filling it
-  //     const investingTokens = web3.utils.toWei(investingStable.toString(), 'ether')
-  //     await stableToken.mint(accounts[4], investingTokens);
-  //     await stableToken.approve(main.address, investingTokens, { from: accounts[4] })
-  //     await main.investVehicle(investingTokens, assetData.tokenAddress, { from: accounts[4] });
-  //
-  //     assetData = await assetRegistry.getAssetById(2); // refresh
-  //     assert.equal(assetData.filled, false, 'storage was NOT updated')
-  //   });
-  //
-  //   it('off the last test, it does update minFillableAmount on Main', async() => {
-  //     const minVal = await main.minFillableAmount.call();
-  //     assert.equal(web3.utils.fromWei(minVal), (CAP / 2), 'storage was update to the remaining tokens of this asset');
-  //   });
-  // });
+  describe('investVehicle()', () => {
+    before(async() => {
+      await addAsset(accounts[2]);
+      assetData = await assetRegistry.getAssetById(1);
+      assetToken = await VTToken.at(assetData.tokenAddress);
+    });
+
+    it('reverts when trying to invest more T tokens than there are VT tokens', async() => {
+      const cap = web3.utils.fromWei(await assetToken.cap());
+      const investingStable = cap * VALUE_PER_TOKEN_USD_CENTS;
+      const investingTokens = web3.utils.toWei(investingStable.toString(), 'ether')
+
+      await shouldFail.reverting(main.investVehicle((investingTokens + 1), assetData.tokenAddress, { from: accounts[3] }));
+    });
+
+    it('reverts when the sender does not have T tokens', async() => {
+      const cap = web3.utils.fromWei(await assetToken.cap());
+      const investingStable = cap * VALUE_PER_TOKEN_USD_CENTS;
+      const investingTokens = web3.utils.toWei(investingStable.toString(), 'ether')
+
+      await shouldFail.reverting(main.investVehicle(investingTokens, assetData.tokenAddress, { from: accounts[3] }));
+    });
+
+    it('allows the sender to invest in an asset and receive VT tokens', async() => {
+      const cap = web3.utils.fromWei(await assetToken.cap());
+      const investingStable = cap * VALUE_PER_TOKEN_USD_CENTS;
+      const investingTokens = web3.utils.toWei(investingStable.toString(), 'ether')
+
+      // user acquires T tokens
+      await stableToken.mint(accounts[3], investingTokens);
+
+      // user approves transfer of T tokens
+      await stableToken.approve(main.address, investingTokens, { from: accounts[3] })
+
+      // user invests T tokens
+      await main.investVehicle(investingTokens, assetData.tokenAddress, { from: accounts[3] });
+
+      // user now has VT tokens
+      const token = await VTToken.at(assetData.tokenAddress);
+      const b = await token.balanceOf(accounts[3]);
+      assert.equal(web3.utils.fromWei(b.toString()), CAP);
+
+      // VTToken contract now has T tokens
+      const b2 = await stableToken.balanceOf(assetData.tokenAddress);
+      assert.equal(web3.utils.fromWei(b2.toString()), investingStable);
+
+      // investment record created
+      const record = await main.getInvestmentById(1);
+      assert.equal(record.owner, accounts[3], 'record added to storage');
+    });
+
+    it('calls setAssetFilled() in AssetRegistry when the asset is fully filled', async() => {
+      assetData = await assetRegistry.getAssetById(1);
+      assert.equal(assetData.filled, true, 'storage was updated')
+    });
+
+    it('does NOT call setAssetFilled() in AssetRegistry when the asset is NOT fully filled', async() => {
+      await addAsset(accounts[3]);
+      assetData = await assetRegistry.getAssetById(2);
+
+      const cap = web3.utils.fromWei(await assetToken.cap());
+      const investingStable = (cap / 2) * VALUE_PER_TOKEN_USD_CENTS; // not filling it
+      const investingTokens = web3.utils.toWei(investingStable.toString(), 'ether')
+      await stableToken.mint(accounts[4], investingTokens);
+      await stableToken.approve(main.address, investingTokens, { from: accounts[4] })
+      await main.investVehicle(investingTokens, assetData.tokenAddress, { from: accounts[4] });
+
+      assetData = await assetRegistry.getAssetById(2); // refresh
+      assert.equal(assetData.filled, false, 'storage was NOT updated')
+    });
+
+    it('off the last test, it does update minFillableAmount on Main', async() => {
+      const minVal = await main.minFillableAmount.call();
+      assert.equal(web3.utils.fromWei(minVal), (CAP / 2), 'storage was update to the remaining tokens of this asset');
+    });
+  });
 
   describe('investPortfolio()', () => {
     before(async() => {
@@ -346,17 +346,36 @@ contract('Main', (accounts) => {
       //
       // 50k investment
       // $10k would be sent to all vehicles because the fact vehicle one has only $10k left
-      // The remaining ($20k) would then be sent evenly again.
+      // The remaining ($10K) would then be sent evenly again.
       it('invests T tokens appropriately by filling one while investing in others evenly', async() => {
         const cap = web3.utils.fromWei(await assetToken.cap());
         // 50k
-        const investingStable = (cap * 0.5) * VALUE_PER_TOKEN_USD_CENTS;
+        const investingStable = (VALUE_USD * 0.5);
         const investingTokens = web3.utils.toWei(investingStable.toString(), 'ether');
 
         await stableToken.mint(accounts[6], investingTokens);
         await stableToken.approve(main.address, investingTokens, { from: accounts[6] });
 
         await main.investPortfolio(investingTokens, { from: accounts[6], gas: 1200000 });
+
+        // Vehicle 1 was fully filled
+        assetData = await assetRegistry.getAssetById(1);
+        assert.equal(assetData.filled, true, 'asset record was updated');
+
+        // Vehicle 2 is not filled
+        assetData2 = await assetRegistry.getAssetById(2);
+        assert.equal(assetData2.filled, false, 'asset record was updated');
+
+        // VT contract for Vehicle 1 has T tokens equal to its value
+        const b = await stableToken.balanceOf(assetData.tokenAddress);
+        assert.equal(web3.utils.fromWei(b), VALUE_USD, 'contract has correct num of T tokens');
+
+        const b2 = await stableToken.balanceOf(assetData2.tokenAddress);
+        const evenFill = (VALUE_USD * 0.1); // 10K
+        const evenDistrib = ((VALUE_USD * 0.1) / 3); // 10K / 3
+        const stable2 = investingStable + evenFill + evenDistrib;
+
+        assert.equal(parseFloat(web3.utils.fromWei(b2).toString()).toFixed(3), stable2.toFixed(3), 'contract has correct num of T tokens');
       });
     });
   });
