@@ -385,7 +385,7 @@ contract Main is Ownable, Pausable {
     } else {
       fillableAssets[id].tokenSupply = _remainingSupply;
 
-      if (_remainingSupply < minFillableAmount || minFillableAmount = 0) {
+      if (_remainingSupply < minFillableAmount || minFillableAmount == 0) {
         minFillableAmount = _remainingSupply;
       }
     }
