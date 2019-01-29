@@ -156,7 +156,7 @@ contract Main is Ownable, Pausable {
     tokenContract.mint(msg.sender, amountTokens);
 
     // update our records of token supplies
-    _updateAssetLookup(_tokenAddress, (tokenContract.cap().sub(tokenContract.totalSupply())));
+    _updateAssetLookup(_tokenAddress, (tokenContract.cap().sub(tokenContract.totalSupply())), amountTokens);
   }
 
   /**
@@ -176,11 +176,11 @@ contract Main is Ownable, Pausable {
     uint totalTokens = _amountStable.div(VALUE_PER_VT_TOKENS_CENTS);
 
     // recursively invest in all assets with a given strategy
-    // TODO: the calculations could be done recursively and THEN we iterate and invest... extra iteration though...
-    uint tempTotal = totalTokens;
-    while(tempTotal != 0) {
-      tempTotal = _recursiveInvestPortfolio(_amountStable, tempTotal);
-    }
+    // TODO: the calculations could be done recursively and THEN we iterate and invest.
+    //       this would require us to log how many tokens all contracts get, and then the minFillableAmount is how much
+    //       ONE gets, but we need to know which one. This also would require is to log this for ALL rounds, as the
+    //       minFillableAmount WILL change after the initial round.
+    _recursiveInvestPortfolio(totalTokens);
 
     // add to storage
     _createInvestmentRecord(
@@ -279,32 +279,50 @@ contract Main is Ownable, Pausable {
     emit InvestmentRecordCreated(_tokenAddress, msg.sender, id);
   }
 
-  function _recursiveInvestPortfolio(uint _amountStable, uint _totalTokens) internal returns (uint) {
-    // HAPPY PATH: the user has enough tokens to cover all assets EQUALLY AND filling the asset closest to being filled
-    uint minFillableRound = fillableAssetsCount.mul(minFillableAmount);
-
-    // OK PATH: the user has enough tokens to cover all assets evenly, even if not filling one
+  /**
+   * Not-so-recursively invests in all VT contracts by prioritizing the one closest to being filled, while still investing
+   * in all assets evenly.
+   * NOTE: this function will be called as many times as it takes to fully use up the invested T tokens while following
+   *       the algo. It will get expensive and compute-intense as more assets are added to the platform.
+   * @dev `minFillableAmount` allows us to safely mint tokens for all VT contracts without going over the cap on one,
+          as this varilable represents the closest a contract is to being filled - _amountStable should be updated as well
+   */
+  function _recursiveInvestPortfolio(uint _totalTokens) internal {
     uint amountTokensEach = _totalTokens.div(fillableAssetsCount);
+    uint minFillableRound = fillableAssetsCount.mul(minFillableAmount);
+    uint amountStableEach;
 
-    if (minFillableRound <= _totalTokens || amountTokensEach <= minFillableAmount) {
-      uint amountStableEach = _amountStable.div(fillableAssetsCount);
-
-      // iterate over our asset lookup and if the element is present, it is because it's still fillable
-      uint amountInvested = 0;
-      for (uint i = 1; i <= (fillableAssets.length - 1); i++) {
-        if (fillableAssets[i].tokenAddress != (address(0))) {
-          _fillAssetForPortfolio(amountStableEach, amountTokensEach, fillableAssets[i].tokenAddress);
-          amountInvested = amountInvested.add(amountTokensEach);
-        }
-      }
-
-      // they should be equal if all were invested in...
-      if (amountInvested == minFillableAmount) {
-        return _totalTokens.sub(amountInvested);
-      }
+    // HAPPY PATH: the user has enough tokens to cover all assets EQUALLY AND filling the asset closest to being filled
+    if (minFillableRound <= _totalTokens) {
+      amountStableEach = minFillableAmount.mul(VALUE_PER_VT_TOKENS_CENTS);
+      amountTokensEach = minFillableAmount;
+    } else if (amountTokensEach <= minFillableAmount) {
+      // OK PATH: the user has enough tokens to cover all assets evenly, even if not filling one
+      amountStableEach = amountTokensEach.mul(VALUE_PER_VT_TOKENS_CENTS);
     } else {
       // need another strategy... try doing less than minFillableRound
-      return 0;
+      return;
+    }
+
+    // iterate over our asset lookup and if the element is present, it is because it's still fillable
+    uint amountInvested = 0;
+    for (uint i = 1; i <= (fillableAssets.length - 1); i++) {
+      if (fillableAssets[i].tokenAddress != (address(0))) {
+        _fillAssetForPortfolio(amountStableEach, amountTokensEach, fillableAssets[i].tokenAddress);
+        amountInvested = amountInvested.add(amountTokensEach);
+      }
+    }
+
+    uint remainingTokens = _totalTokens.sub(amountInvested);
+
+    // hacky way of avoiding impossible division
+    if (remainingTokens < fillableAssetsCount) {
+      // TODO: should be invest all in the next possible one?
+      remainingTokens = 0;
+    }
+
+    if (remainingTokens != 0) {
+      _recursiveInvestPortfolio(remainingTokens);
     }
   }
 
@@ -331,7 +349,7 @@ contract Main is Ownable, Pausable {
     require(portfolioToken.approveFor(_tokenAddress, msg.sender, _amountTokens));
 
     // update our records of token supplies
-    _updateAssetLookup(_tokenAddress, (tokenContract.cap().sub(tokenContract.totalSupply())));
+    _updateAssetLookup(_tokenAddress, (tokenContract.cap().sub(tokenContract.totalSupply())), _amountTokens);
   }
 
   /**
@@ -339,8 +357,9 @@ contract Main is Ownable, Pausable {
    * assist in calculations needed for Portfolio investing
    * @param _tokenAddress Address of VT contract
    * @param _remainingSupply Remaining supply of tokens available in this VT contract
+   * @param _tokensMinted Amount of tokens just minted for this asset
    */
-  function _updateAssetLookup(address _tokenAddress, uint _remainingSupply) internal {
+  function _updateAssetLookup(address _tokenAddress, uint _remainingSupply, uint _tokensMinted) internal {
     // if this contract is now fully invested, emit an event
     uint id = assetRegistry.getAssetIdByToken(_tokenAddress);
 
@@ -351,9 +370,11 @@ contract Main is Ownable, Pausable {
       // part of calculation
       fillableAssetsCount = fillableAssetsCount.sub(1);
 
-      // what if this was the min?
-      if (_remainingSupply == minFillableAmount) {
-        // TODO: how to calculate the new min with _getMin()
+      // what if this was the min? (and there's more assets)
+      if (_tokensMinted == minFillableAmount && fillableAssetsCount > 0) {
+        minFillableAmount = _calculateNewMinFillableAmount();
+      } else if (fillableAssetsCount == 0) {
+        minFillableAmount = 0;
       }
 
       // update storage on asset registry
@@ -364,22 +385,42 @@ contract Main is Ownable, Pausable {
     } else {
       fillableAssets[id].tokenSupply = _remainingSupply;
 
-      if (_remainingSupply < minFillableAmount) {
+      if (_remainingSupply < minFillableAmount || minFillableAmount = 0) {
         minFillableAmount = _remainingSupply;
       }
     }
+  }
+
+  /**
+   * Calculate a new minimum fillable amount for all fillable assets
+   * TODO: this should be in assembly for efficiency
+   */
+  function _calculateNewMinFillableAmount() internal view returns (uint) {
+    uint[] memory supplies = new uint[](fillableAssetsCount);
+    uint j = 0;
+    for (uint i = 1; i <= (fillableAssets.length - 1); i++) {
+      if (fillableAssets[i].tokenAddress != (address(0))) {
+        supplies[j] = fillableAssets[i].tokenSupply; // out-of-bounds should not occur...
+        j = j.add(1);
+      }
+    }
+
+    // sanity check
+    require(fillableAssetsCount == j);
+
+    return _getMin(supplies);
   }
 
   /// @dev Returns the minimum value in an array.
   /// @param self Storage array containing uint256 type variables
   /// @return minValue The smallest value in the array
   /// https://github.com/Modular-Network/ethereum-libraries/contracts/Array256Lib.sol
-  function _getMin(uint256[] storage self) internal view returns(uint256 minValue) {
+  function _getMin(uint256[] memory self) internal view returns (uint256 minValue) {
     assembly {
-      mstore(0x60,self_slot)
+      mstore(0x60,self)
       minValue := sload(keccak256(0x60,0x20))
 
-      for { let i := 0 } lt(i, sload(self_slot)) { i := add(i, 1) } {
+      for { let i := 0 } lt(i, sload(self)) { i := add(i, 1) } {
         switch gt(sload(add(keccak256(0x60,0x20),i)), minValue)
         case 0 {
           minValue := sload(add(keccak256(0x60,0x20),i))
