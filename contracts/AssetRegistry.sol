@@ -27,6 +27,9 @@ contract AssetRegistry is Pausable, Ownable {
   mapping (address => uint[]) private ownerToAssetIds;
   mapping (address => uint) private tokenToAssetIds;
 
+  // allows us to easily calculate the total value of all assets
+  uint[] private assetProjectedValuesUSD;
+
   modifier hasActiveAsset() {
     require(ownerToAssetIds[msg.sender].length != 0, "must have an active asset");
     _;
@@ -53,6 +56,8 @@ contract AssetRegistry is Pausable, Ownable {
       filled: false,
       funded: false
     }));
+
+    assetProjectedValuesUSD.push(0);
   }
 
   function setMainContractAddress(address _contractAddress) public onlyOwner {
@@ -111,6 +116,9 @@ contract AssetRegistry is Pausable, Ownable {
     ownerToAssetIds[owner].push(id);
     tokenToAssetIds[address(token)] = id;
 
+    // update our records for calculating
+    assetProjectedValuesUSD.push(_projectedValueUSD);
+
     emit AssetRecordCreated(address(token), owner, id);
   }
 
@@ -150,6 +158,13 @@ contract AssetRegistry is Pausable, Ownable {
     require(msg.sender == mainContractAddress);
 
     assets[_assetId].filled = true;
+  }
+
+  /**
+   * Calculates and returns the sum of values of all assets (USD)
+   */
+  function calculateTotalValue() public view returns(uint) {
+    return _sumElements(assetProjectedValuesUSD);
   }
 
   /**
@@ -203,5 +218,19 @@ contract AssetRegistry is Pausable, Ownable {
     tokenAddress = asset.tokenAddress;
     filled = asset.filled;
     funded = asset.funded;
+  }
+
+  /// @dev Sum vector
+  /// @param self Storage array containing uint256 type variables
+  /// @return sum The sum of all elements, does not check for overflow
+  /// https://github.com/Modular-Network/ethereum-libraries/contracts/Array256Lib.sol
+  function _sumElements(uint256[] storage self) internal view returns(uint256 sum) {
+    assembly {
+      mstore(0x60,self_slot)
+
+      for { let i := 0 } lt(i, sload(self_slot)) { i := add(i, 1) } {
+        sum := add(sload(add(keccak256(0x60,0x20),i)),sum)
+      }
+    }
   }
 }

@@ -67,13 +67,11 @@ contract Main is Ownable, Pausable {
   /**
    * Contract constructor
    * @dev To avoid bloating the constructor, deploy the PTToken contract off-chain,
-   *      create reference here, and give minting permission to this contract
+   *      create reference with `setPortfolioToken()`, and give minting permission to this contract
    * @param _stableTokenAddress Address of T token
-   * @param _portfolioTokenAddress Address of PT token
    */
-  constructor(address _stableTokenAddress, address _portfolioTokenAddress) public {
+  constructor(address _stableTokenAddress) public {
     stableToken = TToken(_stableTokenAddress);
-    portfolioToken = PTToken(_portfolioTokenAddress);
 
     // take care of zero-index for storage arrays
     investments.push(Investment({
@@ -98,6 +96,14 @@ contract Main is Ownable, Pausable {
    */
   function setAssetRegistry(address _contractAddress) public onlyOwner {
     assetRegistry = AssetRegistry(_contractAddress);
+  }
+
+  /**
+   * Sets this contract's reference to PTToken contract
+   * @param _contractAddress Address of PTToken
+   */
+  function setPortfolioToken(address _contractAddress) public onlyOwner {
+    portfolioToken = PTToken(_contractAddress);
   }
 
   /**

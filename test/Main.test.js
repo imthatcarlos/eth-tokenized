@@ -30,12 +30,18 @@ let assetData3;
 let assetToken3;
 
 async function setupMainContract(contractOwner) {
-  return await Main.new(stableToken.address, portfolioToken.address, { from: contractOwner} );
+  return await Main.new(stableToken.address, { from: contractOwner} );
 }
 
 async function setupAssetRegistryContract(contractOwner) {
   const contract = await AssetRegistry.new(stableToken.address, main.address, { from: contractOwner } );
   await main.setAssetRegistry(contract.address, { from: contractOwner });
+  return contract;
+}
+
+async function setupPortfolioContract(contractOwner) {
+  const contract = await PTToken.new(assetRegistry.address, { from: contractOwner });
+  await main.setPortfolioToken(contract.address, { from: contractOwner });
   return contract;
 }
 
@@ -74,13 +80,15 @@ async function fundAsset(assetOwner) {
 contract('Main', (accounts) => {
   before(async ()=> {
     stableToken = await TToken.new();
-    portfolioToken = await PTToken.new();
     main = await setupMainContract(accounts[0]);
+    assetRegistry = await setupAssetRegistryContract(accounts[0]);
+    portfolioToken = await setupPortfolioContract(accounts[0]);
 
     // give Main contract minting permission
-    await portfolioToken.addMinter(main.address);
+    await portfolioToken.addMinter(main.address, { from: accounts[0] });
 
-    assetRegistry = await setupAssetRegistryContract(accounts[0]);
+    // hacky: give permission for stable token as well
+    await stableToken.addMinter(main.address, { from: accounts[0] });
   });
 
   describe('constructor()', () => {
@@ -169,11 +177,13 @@ contract('Main', (accounts) => {
   describe('investPortfolio()', () => {
     before(async() => {
       // refresh contracts
-      stableToken = await TToken.new();
-      portfolioToken = await PTToken.new();
+      stableToken = await TToken.new({ from: accounts[0] });
       main = await setupMainContract(accounts[0]);
-      await portfolioToken.addMinter(main.address);
       assetRegistry = await setupAssetRegistryContract(accounts[0]);
+      portfolioToken = await setupPortfolioContract(accounts[0]);
+      await portfolioToken.addMinter(main.address, { from: accounts[0] });
+      // hacky: give permission for stable token as well
+      await stableToken.addMinter(main.address, { from: accounts[0] });
     });
 
     it('reverts when there are no assets to invest in', async() => {
@@ -308,10 +318,12 @@ contract('Main', (accounts) => {
       before(async() => {
         // refresh contracts
         stableToken = await TToken.new();
-        portfolioToken = await PTToken.new();
         main = await setupMainContract(accounts[0]);
-        await portfolioToken.addMinter(main.address);
         assetRegistry = await setupAssetRegistryContract(accounts[0]);
+        portfolioToken = await setupPortfolioContract(accounts[0]);
+        await portfolioToken.addMinter(main.address, { from: accounts[0] });
+        // hacky: give permission for stable token as well
+        await stableToken.addMinter(main.address, { from: accounts[0] });
 
         // now prepare scenario
         await addAsset(accounts[2]);

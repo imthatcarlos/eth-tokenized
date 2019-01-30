@@ -26,12 +26,18 @@ let main;
  * Create instance of contracts
  */
  async function setupMainContract(contractOwner) {
-   return await Main.new(stableToken.address, portfolioToken.address, { from: contractOwner} );
+   return await Main.new(stableToken.address, { from: contractOwner } );
  }
 
  async function setupAssetRegistryContract(contractOwner) {
    const contract = await AssetRegistry.new(stableToken.address, main.address, { from: contractOwner } );
    await main.setAssetRegistry(contract.address, { from: contractOwner });
+   return contract;
+ }
+
+ async function setupPortfolioContract(contractOwner) {
+   const contract = await PTToken.new(registry.address, { from: contractOwner });
+   await main.setPortfolioToken(contract.address, { from: contractOwner });
    return contract;
  }
 
@@ -54,14 +60,20 @@ async function addAsset(assetOwner) {
 
 contract('AssetRegistry', (accounts) => {
   before(async ()=> {
-    stableToken = await TToken.new();
-    portfolioToken = await PTToken.new();
+    stableToken = await TToken.new({ from: accounts[0] });
   });
 
   describe('addAsset()', () => {
     before(async ()=> {
       main = await setupMainContract(accounts[0]);
       registry = await setupAssetRegistryContract(accounts[0]);
+      portfolioToken = await setupPortfolioContract(accounts[0]);
+
+      // give Main contract minting permission
+      await portfolioToken.addMinter(main.address, { from: accounts[0] });
+
+      // hacky: give permission for stable token as well
+      await stableToken.addMinter(main.address, { from: accounts[0] });
     });
 
     it('adds the asset to storage', async() => {
@@ -89,6 +101,11 @@ contract('AssetRegistry', (accounts) => {
     before(async ()=> {
       main = await setupMainContract(accounts[0]);
       registry = await setupAssetRegistryContract(accounts[0]);
+      portfolioToken = await setupPortfolioContract(accounts[0]);
+      await portfolioToken.addMinter(main.address, { from: accounts[0] });
+      // hacky: give permission for stable token as well
+      await stableToken.addMinter(main.address, { from: accounts[0] });
+
       await addAsset(accounts[3]);
     });
 

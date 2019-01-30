@@ -35,28 +35,33 @@ module.exports = function(deployer, _network, _accounts) {
 
   // deploy contract
   deployer.deploy(TToken).then(() => {
-    return deployer.deploy(PTToken).then((portfolioToken) => {
-      return deployer.deploy(Main, TToken.address, PTToken.address).then((main) => {
+    //return deployer.deploy(PTToken).then((portfolioToken) => {
+      return deployer.deploy(Main, TToken.address).then((main) => {
         return deployer.deploy(AssetRegistry, TToken.address, Main.address).then(() => {
-          data[network]["Main"] = Main.address;
-          data[network]["AssetRegistry"] = AssetRegistry.address;
-          data[network]["TToken"] = TToken.address;
-          data[network]["PTToken"] = PTToken.address;
+          return deployer.deploy(PTToken, AssetRegistry.address).then((portfolioToken) => {
+            data[network]["Main"] = Main.address;
+            data[network]["AssetRegistry"] = AssetRegistry.address;
+            data[network]["TToken"] = TToken.address;
+            data[network]["PTToken"] = PTToken.address;
 
-          var json = JSON.stringify(data);
-          fs.writeFileSync(filePath, json, "utf8");
+            var json = JSON.stringify(data);
+            fs.writeFileSync(filePath, json, "utf8");
 
-          // write to src/ directory as well
-          const srcFilePath = path.join(__dirname, "./../src/json/contracts.json");
-          fs.writeFileSync(srcFilePath, json, "utf8");
+            // write to src/ directory as well
+            const srcFilePath = path.join(__dirname, "./../src/json/contracts.json");
+            fs.writeFileSync(srcFilePath, json, "utf8");
 
-          // give Main contract minting permission
-          portfolioToken.addMinter(Main.address);
+            // for ref
+            main.setPortfolioToken(PTToken.address);
 
-          // for ref
-          main.setAssetRegistry(AssetRegistry.address);
+            // give Main contract minting permission
+            portfolioToken.addMinter(Main.address);
+
+            // for ref
+            main.setAssetRegistry(AssetRegistry.address);
+          });
         });
       });
-    })
+    //})
   });
 };

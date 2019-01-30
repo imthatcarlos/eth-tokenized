@@ -52,64 +52,64 @@ contract('VTToken', (accounts) => {
     });
   });
 
-  // describe('getProjectedProfit()', () => {
-  //   it('reverts if the caller does not have an investment', async() => {
-  //     var token = await setupTokenContract(accounts[0].toLowerCase());
-  //     await shouldFail.reverting(token.getProjectedProfit({ from: accounts[1].toLowerCase() }));
-  //   });
-  //
-  //   it('calculates the projected profit given the number of tokens the investor owns', async() => {
-  //     var token = await setupTokenContract(accounts[0].toLowerCase());
-  //
-  //     const invested = (CAP / 10);
-  //     await token.mint(
-  //       accounts[1].toLowerCase(),
-  //       web3.utils.toWei(invested.toString(), 'ether'),
-  //       { from: accounts[0].toLowerCase() }
-  //     );
-  //
-  //     const tokens = await token.balanceOf(accounts[1]);
-  //
-  //     // sanity check
-  //     const projected = await token.projectedValueUSD();
-  //     assert.equal(web3.utils.fromWei(projected), calculateProjectedProfit());
-  //
-  //     // calculate our projected
-  //     var ours = await token.getProjectedProfit({ from: accounts[1].toLowerCase() });
-  //     ours = web3.utils.fromWei(ours);
-  //
-  //     assert.equal(ours, calculateProjectedProfit(invested));
-  //   });
-  // });
-  //
-  // describe('getCurrentProfit()', () => {
-  //   it('reverts if the caller does not have an investment', async() => {
-  //     var token = await setupTokenContract(accounts[0].toLowerCase());
-  //     await shouldFail.reverting(token.getCurrentProfit({ from: accounts[1].toLowerCase() }));
-  //   });
-  //
-  //   it('calculates the profit the investor would receive if they cashed out now', async() => {
-  //     var token = await setupTokenContract(accounts[0].toLowerCase());
-  //
-  //     const invested = (CAP / 10);
-  //     await token.mint(
-  //       accounts[1].toLowerCase(),
-  //       web3.utils.toWei(invested.toString(), 'ether'),
-  //       { from: accounts[0].toLowerCase() }
-  //     );
-  //
-  //     // simulate 12 months having passed
-  //     // NOTE: below will not work if using geth node provided from running `npm run 0x:ganache`
-  //     await increaseTime(web3, 60 * 60 * 24 * 365);
-  //
-  //     // if we cashed out one month from now, we should be getting ~ projected / 12
-  //     var profit = await token.getCurrentProfit({ from: accounts[1].toLowerCase() });
-  //     profit = web3.utils.fromWei(profit);
-  //     profit = Math.round(profit) // it's gonna be off by ~0.0000001
-  //
-  //     assert.equal(profit, calculateProjectedProfit(invested), 'after 12 months, current profit = projected');
-  //   });
-  // });
+  describe('getProjectedProfit()', () => {
+    it('reverts if the caller does not have an investment', async() => {
+      var token = await setupTokenContract(accounts[0].toLowerCase());
+      await shouldFail.reverting(token.getProjectedProfit({ from: accounts[1].toLowerCase() }));
+    });
+
+    it('calculates the projected profit given the number of tokens the investor owns', async() => {
+      var token = await setupTokenContract(accounts[0].toLowerCase());
+
+      const invested = (CAP / 10);
+      await token.mint(
+        accounts[1].toLowerCase(),
+        web3.utils.toWei(invested.toString(), 'ether'),
+        { from: accounts[0].toLowerCase() }
+      );
+
+      const tokens = await token.balanceOf(accounts[1]);
+
+      // sanity check
+      const projected = await token.projectedValueUSD();
+      assert.equal(web3.utils.fromWei(projected), calculateProjectedProfit());
+
+      // calculate our projected
+      var ours = await token.getProjectedProfit({ from: accounts[1].toLowerCase() });
+      ours = web3.utils.fromWei(ours);
+
+      assert.equal(ours, calculateProjectedProfit(invested));
+    });
+  });
+
+  describe('getCurrentProfit()', () => {
+    it('reverts if the caller does not have an investment', async() => {
+      var token = await setupTokenContract(accounts[0].toLowerCase());
+      await shouldFail.reverting(token.getCurrentProfit({ from: accounts[1].toLowerCase() }));
+    });
+
+    it('calculates the profit the investor would receive if they cashed out now', async() => {
+      var token = await setupTokenContract(accounts[0].toLowerCase());
+
+      const invested = (CAP / 10);
+      await token.mint(
+        accounts[1].toLowerCase(),
+        web3.utils.toWei(invested.toString(), 'ether'),
+        { from: accounts[0].toLowerCase() }
+      );
+
+      // simulate 12 months having passed
+      // NOTE: below will not work if using geth node provided from running `npm run 0x:ganache`
+      await increaseTime(web3, 60 * 60 * 24 * 365);
+
+      // if we cashed out one month from now, we should be getting ~ projected / 12
+      var profit = await token.getCurrentProfit({ from: accounts[1].toLowerCase() });
+      profit = web3.utils.fromWei(profit);
+      profit = Math.round(profit) // it's gonna be off by ~0.0000001
+
+      assert.equal(profit, calculateProjectedProfit(invested), 'after 12 months, current profit = projected');
+    });
+  });
 
   describe('claimFundsAndBurn()', () => {
     let token;
