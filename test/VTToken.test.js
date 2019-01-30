@@ -124,56 +124,105 @@ contract('VTToken', (accounts) => {
       await shouldFail.reverting(token.claimFundsAndBurn({ from: accounts[1] }));
     });
 
-    // it('reverts if the asset owner has not funded with T tokens', async() => {
-    //   await token.mint(
-    //     accounts[1].toLowerCase(),
-    //     web3.utils.toWei(invested.toString(), 'ether'),
-    //     { from: accounts[0].toLowerCase() }
-    //   );
+    describe('context: HACKY', () => {
+      it('transfers profit T tokens to the investor and burns their VT tokens - HACKY', async() => {
+        await token.mint(
+          accounts[1].toLowerCase(),
+          web3.utils.toWei(invested.toString(), 'ether'),
+          { from: accounts[0].toLowerCase() }
+        );
+
+        // simulate 12 months having passed
+        // NOTE: below will not work if using geth node provided from running `npm run 0x:ganache`
+        await increaseTime(web3, 60 * 60 * 24 * 365);
+
+        // using getProjectedProfit() as getCurrentProfit() is to the second and not reliable
+        // as we are going to mine another block after this
+        var profit = await token.getProjectedProfit({ from: accounts[1].toLowerCase() });
+        profit = web3.utils.fromWei(profit);
+        profit = Math.round(profit) // it's gonna be off by a small fraction, the perSec profit
+
+        // need to fund VT contract with T tokens
+        // await stableToken.mint(token.address, web3.utils.toWei(VALUE_USD.toString(), 'ether'));
+
+        // hacky: we do need to give it minting permission (done in Main#addFillableAsset())
+        await stableToken.addMinter(token.address, { from: accounts[0] });
+
+        await token.claimFundsAndBurn({ from: accounts[1].toLowerCase() });
+
+        // user now has T tokens
+        var balance = await stableToken.balanceOf(accounts[1].toLowerCase());
+        balance = web3.utils.fromWei(balance);
+
+        assert.equal(profit, Math.round(balance)); // it's gonna be off by a small fraction, the perSec profit
+      });
+
+      it('calls selfdestruct() when there are no tokens left (everyone has claimed their funds)', async() => {
+        // storage values are now set to 0 or garbage values
+        // we should not be able to read from the contract (web3 issue)
+        await shouldFail.invalidValues(token.balanceOf(accounts[1]));
+      });
+    });
+
+    // describe('context: ORIGINAL', () => {
+    //   before(async() => {
+    //     // refresh contracts
+    //     token = await setupTokenContract(accounts[0].toLowerCase());
+    //     stableToken = await TToken.new();
+    //   });
     //
-    //   await shouldFail.reverting(token.claimFundsAndBurn({ from: accounts[1] }));
+    //   // it('reverts if the asset owner has not funded with T tokens', async() => {
+    //   //   await token.mint(
+    //   //     accounts[1].toLowerCase(),
+    //   //     web3.utils.toWei(invested.toString(), 'ether'),
+    //   //     { from: accounts[0].toLowerCase() }
+    //   //   );
+    //   //
+    //   //   await shouldFail.reverting(token.claimFundsAndBurn({ from: accounts[1] }));
+    //   // });
+    //
+    //   it('transfers profit T tokens to the investor and burns their VT tokens', async() => {
+    //     await token.mint(
+    //       accounts[1].toLowerCase(),
+    //       web3.utils.toWei(invested.toString(), 'ether'),
+    //       { from: accounts[0].toLowerCase() }
+    //     );
+    //
+    //     // simulate 12 months having passed
+    //     // NOTE: below will not work if using geth node provided from running `npm run 0x:ganache`
+    //     await increaseTime(web3, 60 * 60 * 24 * 365);
+    //
+    //     // using getProjectedProfit() as getCurrentProfit() is to the second and not reliable
+    //     // as we are going to mine another block after this
+    //     var profit = await token.getProjectedProfit({ from: accounts[1].toLowerCase() });
+    //     profit = web3.utils.fromWei(profit);
+    //     profit = Math.round(profit) // it's gonna be off by a small fraction, the perSec profit
+    //
+    //     // need to fund VT contract with T tokens
+    //     await stableToken.mint(token.address, web3.utils.toWei(VALUE_USD.toString(), 'ether'));
+    //
+    //     // hacky: we do need to give it minting permission (done in Main#addFillableAsset())
+    //     // test still passes if contract has funds
+    //     // await stableToken.addMinter(token.address, { from: accounts[0] });
+    //
+    //     await token.claimFundsAndBurn({ from: accounts[1].toLowerCase() });
+    //
+    //     // user now has T tokens
+    //     var balance = await stableToken.balanceOf(accounts[1].toLowerCase());
+    //     balance = web3.utils.fromWei(balance);
+    //
+    //     assert.equal(profit, Math.round(balance)); // it's gonna be off by a small fraction, the perSec profit
+    //   });
+    //
+    //   it('calls selfdestruct() when there are no tokens left (everyone has claimed their funds)', async() => {
+    //     // storage values are now set to 0 or garbage values
+    //     // we should not be able to read from the contract (web3 issue)
+    //     await shouldFail.invalidValues(token.balanceOf(accounts[1]));
+    //   });
     // });
 
-    it('transfers profit T tokens to the investor and burns their VT tokens', async() => {
-      await token.mint(
-        accounts[1].toLowerCase(),
-        web3.utils.toWei(invested.toString(), 'ether'),
-        { from: accounts[0].toLowerCase() }
-      );
-
-      // simulate 12 months having passed
-      // NOTE: below will not work if using geth node provided from running `npm run 0x:ganache`
-      await increaseTime(web3, 60 * 60 * 24 * 365);
-
-      // using getProjectedProfit() as getCurrentProfit() is to the second and not reliable
-      // as we are going to mine another block after this
-      var profit = await token.getProjectedProfit({ from: accounts[1].toLowerCase() });
-      profit = web3.utils.fromWei(profit);
-      profit = Math.round(profit) // it's gonna be off by a small fraction, the perSec profit
-
-      // need to fund VT contract with T tokens
-      // await stableToken.mint(token.address, web3.utils.toWei(VALUE_USD.toString(), 'ether'));
-
-      // hacky: we do need to give it minting permission (done in Main#addFillableAsset())
-      await stableToken.addMinter(token.address, { from: accounts[0] });
-
-      await token.claimFundsAndBurn({ from: accounts[1].toLowerCase() });
-
-      // user now has T tokens
-      var balance = await stableToken.balanceOf(accounts[1].toLowerCase());
-      balance = web3.utils.fromWei(balance);
-
-      assert.equal(profit, Math.round(balance)); // it's gonna be off by a small fraction, the perSec profit
-    });
-
-    it('calls selfdestruct() when there are no tokens left (everyone has claimed their funds)', async() => {
-      // storage values are now set to 0 or garbage values
-      // we should not be able to read from the contract (web3 issue)
-      await shouldFail.invalidValues(token.balanceOf(accounts[1]));
-    });
-
     it('does NOT call selfdestruct when there are tokens left to redeem', async() => {
-      token = await setupTokenContract(accounts[0].toLowerCase());
+      var token = await setupTokenContract(accounts[0].toLowerCase());
       await token.mint(
         accounts[1].toLowerCase(),
         web3.utils.toWei(invested.toString(), 'ether'),
