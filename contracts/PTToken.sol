@@ -5,7 +5,6 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20Mintable.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./ERC223.sol";
 import "./VTToken.sol";
-import "./AssetRegistry.sol";
 
 /**
  * @title PTToken
@@ -18,8 +17,6 @@ contract PTToken is ERC20Burnable, ERC20Mintable, ERC223 {
 
   uint public decimals = 18;  // allows us to divide and retain decimals
 
-  address public assetRegistryAddress;
-
   // to calculate investor claims
   address payable[] public tokenInvestments;
   mapping (address => bool) public tokenHasInvestment;
@@ -27,15 +24,6 @@ contract PTToken is ERC20Burnable, ERC20Mintable, ERC223 {
   modifier activeInvestment() {
     require(balanceOf(msg.sender) != 0, "must have an active investment");
     _;
-  }
-
-  /**
-   * Contract constructor
-   * Sets this contract's ref to AssetRegistry contract address
-   * @param _assetRegistryAddress Address of AssetRegistry
-   */
-  constructor(address _assetRegistryAddress) public {
-    assetRegistryAddress = _assetRegistryAddress;
   }
 
   // NOTE: not used, but keeping for ref

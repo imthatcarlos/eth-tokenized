@@ -40,7 +40,7 @@ async function setupAssetRegistryContract(contractOwner) {
 }
 
 async function setupPortfolioContract(contractOwner) {
-  const contract = await PTToken.new(assetRegistry.address, { from: contractOwner });
+  const contract = await PTToken.new();
   await main.setPortfolioToken(contract.address, { from: contractOwner });
   return contract;
 }
