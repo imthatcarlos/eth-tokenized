@@ -169,22 +169,17 @@ contract AssetRegistry is Pausable, Ownable {
 
   /**
    * Calculates and returns the sum of CURRENT values of all assets (T/USD)
-   * @dev For all assets in the storage array that have not been deleted,
-          calculate its current proft
-   * @param _ownershipPercentage Percentage of all  PT tokens the investor holds
+   * @dev For all assets in the storage array that have not been deleted, calculate its current value
    */
-  function calculateTotalCurrentValue(uint _ownershipPercentage) public view returns(uint) {
-    uint[] memory values = new uint[](assets.length - 1);
-    uint j = 0;
+  function calculateTotalCurrentValue() public view returns(uint) {
+    uint total;
     for (uint i = 1; i <= (assets.length - 1); i++) {
       if (assets[i].tokenAddress != address(0)) {
-        // TODO: here we _would_ also check if the asset has been funded
-        values[j] = VTToken(assets[i].tokenAddress).getCurrentProfitPortfolio(_ownershipPercentage);
-        j = j.add(1);
+        total = total.add(VTToken(assets[i].tokenAddress).getCurrentValue());
       }
     }
 
-    return _sumElementsMemory(values);
+    return total;
   }
 
   /**

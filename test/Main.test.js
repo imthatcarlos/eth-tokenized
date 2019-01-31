@@ -252,6 +252,11 @@ contract('Main', (accounts) => {
         assert.equal(b, b2, 'PT contract has equal balance in both VT contracts');
       });
 
+      it('adds the investment to PT contract investments lookup', async() => {
+        const data = await portfolioToken.tokenInvestments.call(0);;
+        assert.equal(data, assetData.tokenAddress, 'asset token address was added to lookup');
+      });
+
       describe('context: when more assets are added', () => {
         before(async() => {
           // add new assets

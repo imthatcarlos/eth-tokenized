@@ -88,6 +88,14 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
   }
 
   /**
+   * Calculates and returns the current value (to the second) in T tokens of the asset
+   */
+  function getCurrentValue() public view returns(uint) {
+    uint perSec = calculateProfitPerSecond(cap());
+    return valueUSD.add(perSec.mul(valuePerTokenCents).mul(block.timestamp - createdAt));
+  }
+
+  /**
    * Calculates and returns the current profit (to the second) of the sender account's tokens
    * NOTE: we calculate the proft from the second the contract was created, NOT when the tokens have been
    * minted -> createdAt might need to become mintedAtTimestamps[msg.sender] and assigned in Main#investVehicle
@@ -99,14 +107,11 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
   }
 
   /**
-   * (PT) Calculates and returns the current profit (to the second) - in T - of the asset based on its current profit,
-   * how long has passed since the asset was added (AROI), what percentage the sender has a claim on (based on PT)
-   * NOTE: we calculate the proft from the second the contract was created, NOT when the tokens have been minted
+   * (PT) Calculates and returns the current value (to the second) - in T - of the asset based on its AROI
    */
-  function getCurrentProfitPortfolio(uint percentageClaim) public view activeInvestment returns(uint) {
-    uint amountTokens = percentageClaim.mul(totalSupply().div(100));
-    uint perSec = calculateProfitPerSecond(amountTokens);
-    return perSec.mul(block.timestamp - createdAt);
+  function getCurrentValuePortfolio() public view activeInvestment returns(uint) {
+    uint amountTokens = balanceOf(msg.sender);
+    return valueUSD.add(calculateProfitPerSecond(amountTokens).mul(valuePerTokenCents).mul(block.timestamp - createdAt));
   }
 
   /**
