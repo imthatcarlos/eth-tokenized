@@ -99,6 +99,17 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
   }
 
   /**
+   * (PT) Calculates and returns the current profit (to the second) - in T - of the asset based on its current profit,
+   * how long has passed since the asset was added (AROI), what percentage the sender has a claim on (based on PT)
+   * NOTE: we calculate the proft from the second the contract was created, NOT when the tokens have been minted
+   */
+  function getCurrentProfitPortfolio(uint percentageClaim) public view activeInvestment returns(uint) {
+    uint amountTokens = percentageClaim.mul(totalSupply().div(100));
+    uint perSec = calculateProfitPerSecond(amountTokens);
+    return perSec.mul(block.timestamp - createdAt);
+  }
+
+  /**
    * Calculates and returns the projected profit of the sender account's tokens
    */
   function getProjectedProfit() public view activeInvestment returns(uint) {
@@ -127,7 +138,7 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
 
     // transfer T tokens to the investor equal to the current profit
     // NOTE: we are assuming there is no ceiling to the possible profit, meaning not greater than getProjectedProfit()
-    require(stableToken.transfer(msg.sender, investorClaim));
+    require(stableToken.transfer(msg.sender, investorClaim), 'failed transferring T tokens');
 
     // burn their tokens
     burn(balanceOf(msg.sender));
@@ -138,7 +149,7 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
 
       // and we have some T tokens remaining (most likely a tiny fraction < 1) send them to the asset owner
       if (balanceStable > 0) {
-        require(stableToken.transfer(assetOwner, balanceStable));
+        require(stableToken.transfer(assetOwner, balanceStable), 'failed refunding remainder T tokens to asset owner');
       }
 
       // and terminate the contract, sending any remaining ETH to the asset owner

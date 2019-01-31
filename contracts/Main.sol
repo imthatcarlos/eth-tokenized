@@ -340,14 +340,18 @@ contract Main is Ownable, Pausable {
     VTToken tokenContract = VTToken(_tokenAddress);
 
     // sanity check, make sure we don't overflow
-    require(tokenContract.cap() >= tokenContract.totalSupply().add(_amountTokens));
+    require(tokenContract.cap() >= tokenContract.totalSupply().add(_amountTokens), 'overflow in VT contract supply');
 
     // transfer the T tokens to the VT token contract
-    require(stableToken.transferFrom(msg.sender, _tokenAddress, _amountStable));
+    require(stableToken.transferFrom(msg.sender, _tokenAddress, _amountStable), 'failed transferring T tokens');
 
     // mint VT tokens for them, but PT contract holds and records the allowance of VT between PT and the sender
     tokenContract.mint(address(portfolioToken), _amountTokens);
-    require(portfolioToken.approveFor(_tokenAddress, msg.sender, _amountTokens));
+
+    // NOTE: we don't need to log which PT investor got what VT tokens, but keeping here for ref
+    //require(portfolioToken.approveFor(_tokenAddress, msg.sender, _amountTokens));
+
+    require(portfolioToken.addInvestment(_tokenAddress, msg.sender, _amountTokens), 'failed adding investment');
 
     // update our records of token supplies
     _updateAssetLookup(_tokenAddress, (tokenContract.cap().sub(tokenContract.totalSupply())), _amountTokens);

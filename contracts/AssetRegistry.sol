@@ -161,10 +161,30 @@ contract AssetRegistry is Pausable, Ownable {
   }
 
   /**
-   * Calculates and returns the sum of values of all assets (USD)
+   * Calculates and returns the sum of PROJECTED values of all assets (USD)
    */
-  function calculateTotalValue() public view returns(uint) {
-    return _sumElements(assetProjectedValuesUSD);
+  function calculateTotalProjectedValue() public view returns(uint) {
+    return _sumElementsStorage(assetProjectedValuesUSD);
+  }
+
+  /**
+   * Calculates and returns the sum of CURRENT values of all assets (T/USD)
+   * @dev For all assets in the storage array that have not been deleted,
+          calculate its current proft
+   * @param _ownershipPercentage Percentage of all  PT tokens the investor holds
+   */
+  function calculateTotalCurrentValue(uint _ownershipPercentage) public view returns(uint) {
+    uint[] memory values = new uint[](assets.length - 1);
+    uint j = 0;
+    for (uint i = 1; i <= (assets.length - 1); i++) {
+      if (assets[i].tokenAddress != address(0)) {
+        // TODO: here we _would_ also check if the asset has been funded
+        values[j] = VTToken(assets[i].tokenAddress).getCurrentProfitPortfolio(_ownershipPercentage);
+        j = j.add(1);
+      }
+    }
+
+    return _sumElementsMemory(values);
   }
 
   /**
@@ -224,11 +244,25 @@ contract AssetRegistry is Pausable, Ownable {
   /// @param self Storage array containing uint256 type variables
   /// @return sum The sum of all elements, does not check for overflow
   /// https://github.com/Modular-Network/ethereum-libraries/contracts/Array256Lib.sol
-  function _sumElements(uint256[] storage self) internal view returns(uint256 sum) {
+  function _sumElementsStorage(uint256[] storage self) internal view returns(uint256 sum) {
     assembly {
       mstore(0x60,self_slot)
 
       for { let i := 0 } lt(i, sload(self_slot)) { i := add(i, 1) } {
+        sum := add(sload(add(keccak256(0x60,0x20),i)),sum)
+      }
+    }
+  }
+
+  /// @dev Sum vector
+  /// @param self Storage array containing uint256 type variables
+  /// @return sum The sum of all elements, does not check for overflow
+  /// https://github.com/Modular-Network/ethereum-libraries/contracts/Array256Lib.sol
+  function _sumElementsMemory(uint256[] memory self) internal view returns(uint256 sum) {
+    assembly {
+      mstore(0x60,self)
+
+      for { let i := 0 } lt(i, sload(self)) { i := add(i, 1) } {
         sum := add(sload(add(keccak256(0x60,0x20),i)),sum)
       }
     }

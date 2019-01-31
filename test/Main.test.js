@@ -252,16 +252,6 @@ contract('Main', (accounts) => {
         assert.equal(b, b2, 'PT contract has equal balance in both VT contracts');
       });
 
-      it('logs an allowance of VT between the PT contract and the investor equal to VT tokens minted', async() => {
-        var b = await assetToken.allowance(portfolioToken.address, accounts[4]);
-        b = web3.utils.fromWei(b.toString());
-        var b2 = await assetToken2.allowance(portfolioToken.address, accounts[4]);
-        b2 = web3.utils.fromWei(b2.toString());
-
-        assert.equal(b, CAP, 'PT contract allowance of VT tokens for the investor is the token cap');
-        assert.equal(b, b2, 'allowance is the same on both contracts');
-      });
-
       describe('context: when more assets are added', () => {
         before(async() => {
           // add new assets
