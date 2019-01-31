@@ -111,7 +111,8 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
    */
   function getCurrentValuePortfolio() public view activeInvestment returns(uint) {
     uint amountTokens = balanceOf(msg.sender);
-    return valueUSD.add(calculateProfitPerSecond(amountTokens).mul(valuePerTokenCents).mul(block.timestamp - createdAt));
+    uint perSec = calculateProfitPerSecond(amountTokens);
+    return valueUSD.add(perSec.mul(valuePerTokenCents).mul(block.timestamp - createdAt));
   }
 
   /**
@@ -181,6 +182,6 @@ contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
    * @param _amountTokens Number of tokens held
    */
   function calculateProfitYearly(uint _amountTokens) internal view returns(uint) {
-    return _amountTokens.mul(annualizedROI).div(100);
+    return (_amountTokens.mul(annualizedROI)).div(100);
   }
 }
