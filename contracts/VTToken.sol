@@ -3,7 +3,7 @@ pragma solidity 0.5.0;
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Burnable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Capped.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./ERC223.sol";
+//import "./ERC223.sol";
 import "./TToken.sol";
 
 /**
@@ -18,7 +18,7 @@ import "./TToken.sol";
  *
  * @author Carlos Beltran <imthatcarlos@gmail.com>
  */
-contract VTToken is ERC20Burnable, ERC20Capped, ERC223 {
+contract VTToken is ERC20Burnable, ERC20Capped {
   using SafeMath for uint;
 
   uint public decimals = 18;  // allows us to divide and retain decimals

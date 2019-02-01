@@ -3,7 +3,7 @@ pragma solidity 0.5.0;
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Burnable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Mintable.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./ERC223.sol";
+//import "./ERC223.sol";
 import "./VTToken.sol";
 
 /**
@@ -12,7 +12,7 @@ import "./VTToken.sol";
  *
  * @author Carlos Beltran <imthatcarlos@gmail.com>
  */
-contract PTToken is ERC20Burnable, ERC20Mintable, ERC223 {
+contract PTToken is ERC20Burnable, ERC20Mintable {
   using SafeMath for uint;
 
   uint public decimals = 18;  // allows us to divide and retain decimals
@@ -90,14 +90,14 @@ contract PTToken is ERC20Burnable, ERC20Mintable, ERC223 {
     // sanity check
     require(_amountTokens > 0 && _amountTokens <= balanceOf(msg.sender), 'invalid value for _amountTokens');
 
-    // TODO: need to guard against 5 / 100000000000000000
-    uint ownershipPercentage = (_amountTokens.mul(100)).div(totalSupply());
+    // * NOTE: we first multiply by 10e20 so to retain precision, and later divide by 10e20 to get the real value
+    uint ownershipPercentage = (_amountTokens.mul(10**20)).div(totalSupply());
 
     // given the above % ownership, send VT tokens from each of this contract's holdings
     for (uint i = 0; i < tokenInvestments.length; i++) {
       if (tokenInvestments[i] != address(0)) {
         VTToken token = VTToken(tokenInvestments[i]);
-        uint amount = (token.balanceOf(address(this)).mul(ownershipPercentage)).div(100);
+        uint amount = (token.balanceOf(address(this)).mul(ownershipPercentage)).div(10**20);
         // transfer
         require(token.transfer(msg.sender, amount), 'transfer of VT tokens failed');
 
@@ -117,7 +117,7 @@ contract PTToken is ERC20Burnable, ERC20Mintable, ERC223 {
    * Calculates the current value (in T) of the sender's PT investment based on this contract's holdings
    */
   function calculateTotalCurrentValueOwned() public view activeInvestment returns(uint) {
-    return (calculateTotalCurrentValue().mul(getCurrentOwnershipPercentage())).div(100);
+    return (calculateTotalCurrentValue().mul(getCurrentOwnershipPercentage())).div(10**20);
   }
 
   /**
@@ -138,7 +138,7 @@ contract PTToken is ERC20Burnable, ERC20Mintable, ERC223 {
    * Calculates the PROJECTED value (in T) of the sender's PT investment based on this contract's holdings
    */
   function calculateTotalProjectedValueOwned() public view activeInvestment returns (uint) {
-    return (calculateTotalProjectedValue().mul(getCurrentOwnershipPercentage())).div(100);
+    return (calculateTotalProjectedValue().mul(getCurrentOwnershipPercentage())).div(10**20);
   }
 
   /**
@@ -157,9 +157,9 @@ contract PTToken is ERC20Burnable, ERC20Mintable, ERC223 {
 
   /**
    * Calculates and returns the percentage of total tokens the sender holds
+   * NOTE: we first multiply by 10e20 so to retain precision, and later divide by 10e20 to get the real value
    */
   function getCurrentOwnershipPercentage() public view returns(uint) {
-    // TODO: need to guard against 5 / 100000000000000000
-    return (balanceOf(msg.sender).mul(100)).div(totalSupply());
+    return (balanceOf(msg.sender).mul(10**20)).div(totalSupply());
   }
 }
