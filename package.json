@@ -24,7 +24,7 @@
     "@babel/register": "^7.0.0",
     "chai": "^4.2.0",
     "chai-bignumber": "^3.0.0",
-    "ganache-cli": "^6.2.5",
+    "ganache-cli": "^6.3.0",
     "istanbul": "^0.4.5",
     "openzeppelin-solidity": "2.1.1",
     "shx": "^0.3.2"
