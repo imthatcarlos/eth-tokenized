@@ -1,6 +1,6 @@
 # [eth-tokenized]
 
-A collection of smart contract that enable assets to be represented by ERC20 token contract that users can then invest in with a stable token.
+A collection of smart contracts that enable assets to be represented by an ERC20 token contract that users can then invest in with a stable token.
 
 ### Setup
 Clone the repo and run `npm install`
