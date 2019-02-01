@@ -53,10 +53,10 @@ async function addAsset(assetOwner) {
   await assetRegistry.addAsset(
     assetOwner,
     ASSET_NAME,
-    VALUE_USD,
+    web3.utils.toWei(VALUE_USD.toString(), 'ether'),
     web3.utils.toWei(CAP.toString(), 'ether'), // BigNumber format
     ANNUALIZED_ROI,
-    (VALUE_USD + calculateProjectedProfit()),
+    web3.utils.toWei((VALUE_USD + calculateProjectedProfit()).toString(), 'ether'),
     TIMEFRAME_MONTHS,
     VALUE_PER_TOKEN_USD_CENTS,
     { from: assetOwner }

@@ -28,7 +28,7 @@ async function setupTokenContract(assetOwner, timeframeMonths = 12) {
     ANNUALIZED_ROI,
     web3.utils.toWei(calculateProjectedProfit(VALUE_USD, timeframeMonths).toString(), 'ether'), // total projected
     timeframeMonths,
-    web3.utils.toWei(VALUE_PER_TOKEN_USD_CENTS.toString(), 'ether'),
+    VALUE_PER_TOKEN_USD_CENTS,
     { from: assetOwner }
   );
 }
@@ -68,8 +68,6 @@ contract('VTToken', (accounts) => {
         { from: accounts[0].toLowerCase() }
       );
 
-      const tokens = await token.balanceOf(accounts[1]);
-
       // sanity check
       const projected = await token.projectedValueUSD();
       assert.equal(web3.utils.fromWei(projected), calculateProjectedProfit());
@@ -108,6 +106,36 @@ contract('VTToken', (accounts) => {
       profit = Math.round(profit) // it's gonna be off by ~0.0000001
 
       assert.equal(profit, calculateProjectedProfit(invested), 'after 12 months, current profit = projected');
+    });
+  });
+
+  describe('getCurrentValuePortfolio()', async() => {
+    it('reverts if the caller does not have an investment', async() => {
+      var token = await setupTokenContract(accounts[0].toLowerCase());
+      await shouldFail.reverting(token.getCurrentProfit({ from: accounts[1].toLowerCase() }));
+    });
+
+    it('calculates the total value of the asset + its current profit', async() => {
+      var token = await setupTokenContract(accounts[0].toLowerCase());
+
+      const invested = (CAP / 10);
+      await token.mint(
+        accounts[1].toLowerCase(),
+        web3.utils.toWei(invested.toString(), 'ether'),
+        { from: accounts[0].toLowerCase() }
+      );
+
+      // simulate 12 months having passed
+      // NOTE: below will not work if using geth node provided from running `npm run 0x:ganache`
+      await increaseTime(web3, 60 * 60 * 24 * 365);
+
+      var value = await token.getCurrentValuePortfolio({ from: accounts[1].toLowerCase() });
+      value = web3.utils.fromWei(value);
+      value = Math.round(value) // it's gonna be off by a small fraction of a unit
+
+      const expected = VALUE_USD + (calculateProjectedProfit(invested) * VALUE_PER_TOKEN_USD_CENTS);
+
+      assert.equal(value, expected, 'after 12 months, current value is value + profit');
     });
   });
 
