@@ -45,6 +45,7 @@ function calculateProjectedProfit(value = VALUE_USD, timeframeMonths = 12) {
   return (value * (ANNUALIZED_ROI / 100)) * (timeframeMonths / 12);
 }
 
+// TODO: values should be big numbers, don't matter for these tests
 async function addAsset(assetOwner) {
   await registry.addAsset(
     assetOwner,
@@ -94,6 +95,43 @@ contract('AssetRegistry', (accounts) => {
 
       const minVal = await main.minFillableAmount.call();
       assert.equal(minVal.toNumber(), CAP, 'this asset is the closest to being filled');
+    });
+  });
+
+  describe('editAsset()', () => {
+    let data;
+
+    before(async() => {
+      data = await registry.getAssetById(1);
+    });
+
+    it('reverts if the sender is not the contract owner (not to be confused with the asset owner)', async() => {
+      await shouldFail.reverting(registry.editAsset(
+        data.tokenAddress,
+        VALUE_USD,
+        ANNUALIZED_ROI,
+        (VALUE_USD + calculateProjectedProfit()),
+        TIMEFRAME_MONTHS,
+        VALUE_PER_TOKEN_USD_CENTS,
+       { from: accounts[5] }
+     ));
+    });
+
+    it('updates storage', async() => {
+      await registry.editAsset(
+        data.tokenAddress,
+        (VALUE_USD + 1), // updating this
+        ANNUALIZED_ROI,
+        (VALUE_USD + calculateProjectedProfit()),
+        TIMEFRAME_MONTHS,
+        VALUE_PER_TOKEN_USD_CENTS,
+       { from: accounts[0] }
+      );
+
+      const token = await VTToken.at(data.tokenAddress);
+      const newData = await token.valueUSD.call();
+
+      assert.equal(newData, (VALUE_USD + 1).toString(), 'storage was updated');
     });
   });
 

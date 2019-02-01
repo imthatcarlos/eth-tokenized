@@ -363,7 +363,7 @@ contract('Main', (accounts) => {
         await stableToken.mint(accounts[6], investingTokens);
         await stableToken.approve(main.address, investingTokens, { from: accounts[6] });
 
-        await main.investPortfolio(investingTokens, { from: accounts[6], gas: 1200000 });
+        await main.investPortfolio(investingTokens, { from: accounts[6], gas: 1200000 }); // gas would increase as we add more assets to the platform.
 
         // Vehicle 1 was fully filled
         assetData = await assetRegistry.getAssetById(1);

@@ -5,6 +5,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20Capped.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 //import "./ERC223.sol";
 import "./TToken.sol";
+import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
 /**
  * @title VTToken
@@ -13,9 +14,11 @@ import "./TToken.sol";
  * NOTE: all numbers (except timeframeMonths, annualizedROI, and valuePerTokenCents) will have 18 decimal places to
  *       allow more precision when dividing. when reading such values from this contract, clients
  *       should use `web3.utils.fromWei(number)`
+ * NOTE: this contract is only Ownable to allow editing certain data by the contract owner, specifically the AssetRegistry
+ *        contract, which itself will only be accessible to that contract owner
  * @author Carlos Beltran <imthatcarlos@gmail.com>
  */
-contract VTToken is ERC20Burnable, ERC20Capped {
+contract VTToken is ERC20Burnable, ERC20Capped, Ownable {
   using SafeMath for uint;
 
   uint public decimals = 18;  // allows us to divide and retain decimals
@@ -75,6 +78,28 @@ contract VTToken is ERC20Burnable, ERC20Capped {
     valuePerTokenCents = _valuePerTokenCents;
     stableToken = TToken(_stableTokenAddress);
     assetOwner = _assetOwner;
+  }
+
+  /**
+   * Allows the contract owner to edit certain data about the asset
+   * @param _valueUSD Value of the asset in USD
+   * @param _annualizedROI AROI %
+   * @param _projectedValueUSD The PROJECTED value of the asset in USD
+   * @param _timeframeMonths Time frame for the investment
+   * @param _valuePerTokenCents Value of each token
+   */
+  function editAssetData(
+    uint _valueUSD,
+    uint _annualizedROI,
+    uint _projectedValueUSD,
+    uint _timeframeMonths,
+    uint _valuePerTokenCents
+  ) public onlyOwner {
+    valueUSD = _valueUSD;
+    annualizedROI = _annualizedROI;
+    projectedValueUSD = _projectedValueUSD;
+    timeframeMonths = _timeframeMonths;
+    valuePerTokenCents = _valuePerTokenCents;
   }
 
   /**

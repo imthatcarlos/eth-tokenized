@@ -6,6 +6,7 @@ This contract manages the functionality for assets - adding records, as well as 
 ### Index
 
 - #### addAsset()
+- #### editAsset()
 - #### fundAsset()
 - #### setAssetFilled()
 - #### calculateTotalProjectedValue()
@@ -18,7 +19,7 @@ This contract manages the functionality for assets - adding records, as well as 
 ----
 ```
 functions with 'hasActiveAsset' or `validAsset` require that the requested
-data is valid. those with `onlyAssetOwner` only allow the asset owner to access
+data is valid. those with `onlyAssetOwner` only allow the asset owner to access, and with `onlyOwner` allows only contract owner to call, the one that deployed the contract.
 ```
 
 #### function addAsset(address payable owner, string calldata \_name, uint \_valueUSD, uint \_cap, uint \_annualizedROI, uint \_projectedValueUSD, uint \_timeframeMonths, uint \_valuePerTokenCents) public
@@ -26,6 +27,12 @@ Creates an Asset record and adds it to storage, also creating a VTToken contract
 ```
 The only contracts that are able to mint tokens for the newly created VT contract are this AssetRegistry contract and the Main contract. If architecture changes, new contracts can
 be given minting permission with `addMinter()`
+```
+
+#### function editAsset(address payable tokenAddress, uint \_valueUSD, uint \_annualizedROI, uint \_projectedValueUSD, uint \_timeframeMonths, uint \_valuePerTokenCents) public
+Allows the contract owner to edit certain data on the token contract
+```
+we don't allow editing the token cap of the contract as it would jeopardize the validity of lookup records of other contracts (ie: Asset.filled in AssetRegistry)
 ```
 
 #### function fundAsset(uint \_amountStable, uint \_assetId) public onlyAssetOwner(\_assetId)

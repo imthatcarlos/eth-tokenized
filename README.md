@@ -1,11 +1,38 @@
 # [eth-tokenized]
 
-A collection of smart contracts that enable assets to be represented by an ERC20 token contract that users can then invest in with a stable token.
+A collection of smart contracts that enable assets to be represented by an ERC20 token contract that users can then
+invest in with a stable token.
+
+These contracts make use of the [OpenZeppelin](https://github.com/OpenZeppelin/openzeppelin-solidity) library for secure
+smart contracts, specifically standard functionality for ERC20 tokens and contract management (ownership/state). I would
+recommend using ZeppelinOS(https://zeppelinos.org/) to make the production contracts upgradable.
+
+This project uses the [Truffle](https://github.com/trufflesuite/truffle) framework to compile, debug, and deploy
+contracts. The configuration file `truffle.js` is configured to deploy contracts to a specified network, and using
+[Infura](https://infura.io/) to deploy to Ropsten and Main networks.
+
+Developer Notes:
+- `VTToken` and `PTToken` inherited from ERC223 contract for the `tokenFallback()` function in the overridden
+`transfer()`. However, when transferring to user wallets, this function failed. So the inheritance was removed. Both
+contracts still fully inherit from ERC20 for standard functionality as well as for minting and burning.
+- To mitigate the heavy computations done on-chain, some functions from `Array256Lib.sol` contract were copied
+over, including `_sumElements()` and `_getMin()`. These heavy computations could be done off-chain using the getter
+methods provided, however it could risk invalid values being submitted.
+- `Main.sol` contract is the most bloated and expensive to deploy. This could be mitigated by decoupling the logic
+for Portfolio investing, especially `investPortfolio()` as it is the most expensive operation (iterating all VT over
+  all contracts, reading, and computing). Logic was bundled into this contract to avoid extra read expenses.
+- Most number values fed into contract functions _must_ be sent as `BigNumber` values. See tests for examples, but
+generally is done like so: `web3.utils.toWei(number.toString(), 'ether')`
+- Assets data can be updated by the contract owner via `editAsset()` on `AssetRegistry`, however the token cap is
+derived from the initial `_valueUSD / _valuePerTokenUSD`, so there will have to be some balancing if we want to
+preserve correct calculations. An idea is to pump the value of `_valuePerTokenUSD` to match the new `_valueUSD` with
+the same cap, however this is situational (?)
+
 
 ### Setup
 Clone the repo and run `npm install`
 
-You will need [Truffle](https://github.com/trufflesuite/truffle) installed globally `npm install truffle -g`
+You will need Truffle installed globally `npm install truffle -g`
 
 Finally, install a geth client like [Ganache](https://github.com/trufflesuite/ganache-cli) `npm install ganache-cli -g`
 

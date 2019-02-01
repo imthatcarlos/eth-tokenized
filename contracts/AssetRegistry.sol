@@ -18,6 +18,7 @@ contract AssetRegistry is Pausable, Ownable {
   using SafeMath for uint;
 
   event AssetRecordCreated(address tokenAddress, address assetOwner, uint id);
+  event AssetRecordUpdated(address indexed tokenAddress, uint id);
   event AssetFunded(uint id, address tokenAddress);
 
   struct Asset {
@@ -131,6 +132,47 @@ contract AssetRegistry is Pausable, Ownable {
     assetProjectedValuesUSD.push(_projectedValueUSD);
 
     emit AssetRecordCreated(address(token), _owner, id);
+  }
+
+  /**
+   * Allows the contract owner to edit certain data on the token contract
+   * NOTE: we don't allow editing the token cap of the contract as it would jeopardize the validity of lookup
+   *       records of other contracts (ie: Asset.filled in AssetRegistry). That being said...
+   * NOTE: the cap is derived from the initial _valueUSD / _valuePerTokenUSD, so there will have to be some balancing
+   *       if we want to preserve correct calculations
+   * @param _tokenAddress The address of token contract
+   * @param _valueUSD Value of the asset in USD
+   * @param _annualizedROI AROI %
+   * @param _projectedValueUSD The PROJECTED value of the asset in USD
+   * @param _timeframeMonths Time frame for the investment
+   * @param _valuePerTokenCents Value of each token
+   */
+  function editAsset(
+    address payable _tokenAddress,
+    uint _valueUSD,
+    uint _annualizedROI,
+    uint _projectedValueUSD,
+    uint _timeframeMonths,
+    uint _valuePerTokenCents
+  ) external onlyOwner {
+    // sanity check, must be a valid asset contract
+    require(tokenToAssetIds[_tokenAddress] != 0);
+
+    VTToken(_tokenAddress).editAssetData(
+      _valueUSD,
+      _annualizedROI,
+      _projectedValueUSD,
+      _timeframeMonths,
+      _valuePerTokenCents
+    );
+
+    // udpate the projected value usd for the lookup record
+    // ids on both arrays should be 1:1
+    uint id = tokenToAssetIds[_tokenAddress];
+    assetProjectedValuesUSD[id] = _projectedValueUSD;
+
+    // emit an event for active clients to be notified
+    emit AssetRecordUpdated(_tokenAddress, id);
   }
 
 

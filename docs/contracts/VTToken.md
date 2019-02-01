@@ -1,5 +1,5 @@
 ## VTToken.sol
-## is `ERC20Burnable`, `ERC20Capped`
+## is `ERC20Burnable`, `ERC20Capped`, `Ownable`
 
 This token contract represents a particular vehicle asset, and tokens are minted for accounts as they invest in them.
 
@@ -9,6 +9,11 @@ all numbers (except timeframeMonths, annualizedROI, and valuePerTokenCents) will
 this contract, clients should use `web3.utils.fromWei(number)`
 ```
 
+```
+this contract is only Ownable to allow editing certain data by the contract owner, specifically the AssetRegistry
+contract, which itself will only be accessible to that contract owner
+```
+
 ### Index
 
 - #### getCurrentValue()
@@ -16,6 +21,7 @@ this contract, clients should use `web3.utils.fromWei(number)`
 - #### getCurrentValuePortfolio()
 - #### getProjectedProfit()
 - #### claimFundsAndBurn()
+- #### editAssetData()
 
 ----
 ```
@@ -40,4 +46,9 @@ Allows a token holder to claim their profits once this contract has been funded,
 ```
 hacky: we don't require the contract to have enough T tokens to
 cover claims, we mint any T tokens we need
+```
+#### function editAssetData(uint \_valueUSD, uint \_annualizedROI, uint \_projectedValueUSD, uint \_timeframeMonths, uint \_valuePerTokenCents) public onlyOwner
+Allows the contract owner to edit certain data about the asset
+```
+can only be called by the contract owner (the AssetRegistry contract)
 ```
