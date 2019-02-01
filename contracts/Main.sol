@@ -211,9 +211,10 @@ contract Main is Ownable, Pausable {
   /**
    * Returns the ids of all the given accounts's active investments
    * NOTE: can only be called by contract owner
+   * @param _owner Owner address of assets
    */
-  function getActiveInvestmentIdsOf(address owner) public view returns(uint[] memory) {
-    return activeInvestmentIds[owner];
+  function getActiveInvestmentIdsOf(address _owner) public view onlyOwner returns(uint[] memory) {
+    return activeInvestmentIds[_owner];
   }
 
   /**

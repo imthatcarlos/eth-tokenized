@@ -114,14 +114,14 @@ contract PTToken is ERC20Burnable, ERC20Mintable {
   }
 
   /**
-   * Calculates the current value (in T) of the sender's PT investment based on this contract's holdings
+   * Calculates the current value (in T) of the sender's PT investment based on this contract's holdings in VT contracts
    */
   function calculateTotalCurrentValueOwned() public view activeInvestment returns(uint) {
     return (calculateTotalCurrentValue().mul(getCurrentOwnershipPercentage())).div(10**20);
   }
 
   /**
-   * Calculates the current value (in T) of the sender's PT investment based on this contract's holdings
+   * Calculates the current value (in T) of this contract's holdings in VT contracts
    */
   function calculateTotalCurrentValue() public view returns(uint) {
     uint total;
@@ -142,7 +142,7 @@ contract PTToken is ERC20Burnable, ERC20Mintable {
   }
 
   /**
-   * Calculates the PROJECTED value (in T) of this asset's holdings
+   * Calculates the PROJECTED value (in T) of this contract's holdings in VT contracts
    */
   function calculateTotalProjectedValue() public view returns (uint) {
     uint total;

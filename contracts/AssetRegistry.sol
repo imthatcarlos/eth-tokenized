@@ -7,6 +7,13 @@ import "./VTToken.sol";
 import "./TToken.sol";
 import "./Main.sol";
 
+/**
+ * @title AssetRegistry
+ * This contract manages the functionality for assets - adding records, as well as reading data. It allows
+ * users to add assets to the platform, and asset owners to fund their assets once sold.
+ *
+ * @author Carlos Beltran <imthatcarlos@gmail.com>
+ */
 contract AssetRegistry is Pausable, Ownable {
   using SafeMath for uint;
 
@@ -60,6 +67,10 @@ contract AssetRegistry is Pausable, Ownable {
     assetProjectedValuesUSD.push(0);
   }
 
+  /**
+   * Sets this contract's reference to the Main contract
+   * @param _contractAddress Main contract address
+   */
   function setMainContractAddress(address _contractAddress) public onlyOwner {
     mainContractAddress = _contractAddress;
   }
@@ -67,7 +78,7 @@ contract AssetRegistry is Pausable, Ownable {
   /**
    * Creates an Asset record and adds it to storage, also creating a VTToken contract instance to
    * represent the asset
-   * @param owner Owner of the asset
+   * @param _owner Owner of the asset
    * @param _name Name of the asset
    * @param _valueUSD Value of the asset in USD
    * @param _cap token cap == _valueUSD / _valuePerTokenUSD
@@ -77,7 +88,7 @@ contract AssetRegistry is Pausable, Ownable {
    * @param _valuePerTokenCents Value of each token
    */
   function addAsset(
-    address payable owner,
+    address payable _owner,
     string calldata _name,
     uint _valueUSD,
     uint _cap,
@@ -87,7 +98,7 @@ contract AssetRegistry is Pausable, Ownable {
     uint _valuePerTokenCents
   ) external {
     VTToken token = new VTToken(
-      owner,
+      _owner,
       address(stableToken),
       _name,
       _valueUSD,
@@ -105,7 +116,7 @@ contract AssetRegistry is Pausable, Ownable {
     Main(mainContractAddress).addFillableAsset(address(token), _cap);
 
     Asset memory record = Asset({
-      owner: owner,
+      owner: _owner,
       tokenAddress: address(token),
       filled: false,
       funded: false
@@ -113,13 +124,13 @@ contract AssetRegistry is Pausable, Ownable {
 
     // add the record to the storage array and push the index to the hashmap
     uint id = assets.push(record) - 1;
-    ownerToAssetIds[owner].push(id);
+    ownerToAssetIds[_owner].push(id);
     tokenToAssetIds[address(token)] = id;
 
     // update our records for calculating
     assetProjectedValuesUSD.push(_projectedValueUSD);
 
-    emit AssetRecordCreated(address(token), owner, id);
+    emit AssetRecordCreated(address(token), _owner, id);
   }
 
 
@@ -201,8 +212,8 @@ contract AssetRegistry is Pausable, Ownable {
    * Returns the ids of all the given accounts's active assets
    * NOTE: can only be called by contract owner
    */
-  function getActiveAssetIdsOf(address owner) public view returns(uint[] memory) {
-    return ownerToAssetIds[owner];
+  function getActiveAssetIdsOf(address _owner) public view onlyOwner returns(uint[] memory) {
+    return ownerToAssetIds[_owner];
   }
 
   /**

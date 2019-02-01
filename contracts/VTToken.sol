@@ -10,12 +10,9 @@ import "./TToken.sol";
  * @title VTToken
  * This token contract represents a particular vehicle asset, and tokens are minted for
  * accounts as they invest in them.
- * NOTE: all numbers (except timeframeMonths and annualizedROI) will have 18 decimal places to allow more
- *       precision when dividing. when reading such values from this contract, clients
+ * NOTE: all numbers (except timeframeMonths, annualizedROI, and valuePerTokenCents) will have 18 decimal places to
+ *       allow more precision when dividing. when reading such values from this contract, clients
  *       should use `web3.utils.fromWei(number)`
- * NOTE: we don't divide the annualizedROI by 100 (precision) so the client must do so after calls to
- *       getCurrentProfit() and getProjectedProfit()
- *
  * @author Carlos Beltran <imthatcarlos@gmail.com>
  */
 contract VTToken is ERC20Burnable, ERC20Capped {
@@ -178,7 +175,6 @@ contract VTToken is ERC20Burnable, ERC20Capped {
 
   /**
    * Calculates yearly profit of holding tokens for this asset
-   * NOTE: we don't divide the annualizedROI by 100 here (precision) so the client must do so
    * @param _amountTokens Number of tokens held
    */
   function calculateProfitYearly(uint _amountTokens) internal view returns(uint) {
