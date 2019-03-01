@@ -11,4 +11,13 @@ interface IVehicleToken {
   function getCurrentValuePortfolio() external view returns(uint);
   function getProjectedProfit() external view returns(uint);
   function claimFundsAndBurn() external;
+
+  // compiler-generated getter methods
+  function valuePerTokenCents() external view returns(uint value);
+  function cap() external view returns(uint value);
+  function totalSupply() external view returns(uint value);
+  function timeframeMonths() external view returns(uint value);
+
+  // erc20 mintable
+  function mint(address to, uint256 tokenId) external returns (bool);
 }

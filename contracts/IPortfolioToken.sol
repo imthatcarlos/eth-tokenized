@@ -10,7 +10,10 @@ interface IPortfolioToken {
   function claimFundsAndBurn(uint _amountTokens) external;
   function calculateTotalCurrentValueOwned() external view returns(uint);
   function calculateTotalCurrentValue() external view returns(uint);
-  function calculateTotalProjectedValueOwned() external view returns (uint);
-  function calculateTotalProjectedValue() external view returns (uint);
+  function calculateTotalProjectedValueOwned() external view returns(uint);
+  function calculateTotalProjectedValue() external view returns(uint);
   function getCurrentOwnershipPercentage() external view returns(uint);
+
+  // erc20 mintable
+  function mint(address to, uint256 value) external returns(bool);
 }

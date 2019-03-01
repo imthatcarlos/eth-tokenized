@@ -26,6 +26,6 @@ interface IAssetRegistry {
   function getFillableAssetAddressAt(uint _id) external view returns(address payable tokenAddress);
 
   // compiler-generated getter methods
-  function getFillableAssetsCount() external view returns(uint fillableAssetsCount);
-  function getMinFillableAmount() external view returns(uint minFillableAmount);
+  function fillableAssetsCount() external view returns(uint value);
+  function minFillableAmount() external view returns(uint value);
 }

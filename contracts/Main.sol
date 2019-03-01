@@ -3,9 +3,9 @@ pragma solidity 0.5.0;
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./VehicleToken.sol";
+import "./IVehicleToken.sol";
 import "./StableToken.sol";
-import "./PortfolioToken.sol";
+import "./IPortfolioToken.sol";
 import "./IAssetRegistry.sol";
 
 /**
@@ -34,7 +34,7 @@ contract Main is Ownable, Pausable {
   uint public VALUE_PER_VT_TOKENS_CENTS = 10;
 
   StableToken private stableToken;
-  PortfolioToken private portfolioToken;
+  IPortfolioToken private portfolioToken;
   IAssetRegistry private assetRegistry;
 
   Investment[] private investments;
@@ -84,7 +84,7 @@ contract Main is Ownable, Pausable {
    * @param _contractAddress Address of PortfolioToken
    */
   function setPortfolioToken(address _contractAddress) public onlyOwner {
-    portfolioToken = PortfolioToken(_contractAddress);
+    portfolioToken = IPortfolioToken(_contractAddress);
   }
 
   /**
@@ -94,7 +94,7 @@ contract Main is Ownable, Pausable {
    * @param _tokenAddress Address of the VehicleToken contract
    */
   function investVehicle(uint _amountStable, address payable _tokenAddress) public {
-    VehicleToken tokenContract = VehicleToken(_tokenAddress);
+    IVehicleToken tokenContract = IVehicleToken(_tokenAddress);
 
     // total amount of tokens to mint for the sender
     uint amountTokens = _amountStable.div(tokenContract.valuePerTokenCents());
@@ -129,7 +129,7 @@ contract Main is Ownable, Pausable {
    */
   function investPortfolio(uint _amountStable) public {
     // sanity check
-    require(assetRegistry.getFillableAssetsCount() > 0, 'there are no assets to invest in');
+    require(assetRegistry.fillableAssetsCount() > 0, 'there are no assets to invest in');
 
     // mint the equivalent of PT tokens as stable for them
     portfolioToken.mint(msg.sender, _amountStable);
@@ -244,8 +244,8 @@ contract Main is Ownable, Pausable {
           as this varilable represents the closest a contract is to being filled - _amountStable should be updated as well
    */
   function _recursiveInvestPortfolio(uint _totalTokens) internal {
-    uint count = assetRegistry.getFillableAssetsCount();
-    uint minFillableAmount = assetRegistry.getMinFillableAmount();
+    uint count = assetRegistry.fillableAssetsCount();
+    uint minFillableAmount = assetRegistry.minFillableAmount();
 
     uint amountTokensEach = _totalTokens.div(count);
     uint minFillableRound = count.mul(minFillableAmount);
@@ -296,7 +296,7 @@ contract Main is Ownable, Pausable {
    * @param _tokenAddress Address of VT contract
    */
   function _fillAssetForPortfolio(uint _amountStable, uint _amountTokens, address payable _tokenAddress) internal {
-    VehicleToken tokenContract = VehicleToken(_tokenAddress);
+    IVehicleToken tokenContract = IVehicleToken(_tokenAddress);
 
     // sanity check, make sure we don't overflow
     require(tokenContract.cap() >= tokenContract.totalSupply().add(_amountTokens), 'overflow in VT contract supply');

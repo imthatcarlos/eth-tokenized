@@ -29,8 +29,8 @@ contract AssetRegistry is IAssetRegistry, Pausable, Ownable {
     uint tokenSupply;
   }
 
-  uint public fillableAssetsCount;
-  uint public minFillableAmount; // minimum tokens required to fill one Asset
+  uint public _fillableAssetsCount;
+  uint public _minFillableAmount; // minimum tokens required to fill one Asset
 
   StableToken private stableToken;
   address private mainContractAddress;
@@ -200,13 +200,13 @@ contract AssetRegistry is IAssetRegistry, Pausable, Ownable {
       delete fillableAssets[id];
 
       // part of calculation
-      fillableAssetsCount = fillableAssetsCount.sub(1);
+      _fillableAssetsCount = _fillableAssetsCount.sub(1);
 
       // what if this was the min? (and there's more assets)
-      if (_tokensMinted == minFillableAmount && fillableAssetsCount > 0) {
-        minFillableAmount = _calculateNewMinFillableAmount();
-      } else if (fillableAssetsCount == 0) {
-        minFillableAmount = 0;
+      if (_tokensMinted == _minFillableAmount && _fillableAssetsCount > 0) {
+        _minFillableAmount = _calculateNewMinFillableAmount();
+      } else if (_fillableAssetsCount == 0) {
+        _minFillableAmount = 0;
       }
 
       // update record
@@ -217,8 +217,8 @@ contract AssetRegistry is IAssetRegistry, Pausable, Ownable {
     } else {
       fillableAssets[id].tokenSupply = _remainingSupply;
 
-      if (_remainingSupply < minFillableAmount || minFillableAmount == 0) {
-        minFillableAmount = _remainingSupply;
+      if (_remainingSupply < _minFillableAmount || _minFillableAmount == 0) {
+        _minFillableAmount = _remainingSupply;
       }
     }
   }
@@ -308,12 +308,12 @@ contract AssetRegistry is IAssetRegistry, Pausable, Ownable {
     return fillableAssets[_id].tokenAddress;
   }
 
-  function getFillableAssetsCount() public view returns(uint) {
-    return fillableAssetsCount;
+  function fillableAssetsCount() public view returns(uint) {
+    return _fillableAssetsCount;
   }
 
-  function getMinFillableAmount() public view returns(uint) {
-    return minFillableAmount;
+  function minFillableAmount() public view returns(uint) {
+    return _minFillableAmount;
   }
 
   /**
@@ -341,7 +341,7 @@ contract AssetRegistry is IAssetRegistry, Pausable, Ownable {
 
   /**
    * Adds the new asset token contract to our lookup table for PT calculations, and updates
-   * helper variables `minFillableAmount` and `fillableAssetsCount`
+   * helper variables `_minFillableAmount` and `_fillableAssetsCount`
    * @param _tokenAddress Address of new VT contract
    * @param _cap Token cap of the asset
    */
@@ -352,11 +352,11 @@ contract AssetRegistry is IAssetRegistry, Pausable, Ownable {
     }));
 
     // is this asset fillable quicker?
-    if (minFillableAmount == 0 || _cap < minFillableAmount) {
-      minFillableAmount = _cap;
+    if (_minFillableAmount == 0 || _cap < _minFillableAmount) {
+      _minFillableAmount = _cap;
     }
 
-    fillableAssetsCount = fillableAssetsCount.add(1);
+    _fillableAssetsCount = _fillableAssetsCount.add(1);
 
     // hacky: allows the token contract contract to mint T tokens it needs to satisfy investor claims
     stableToken.addMinter(_tokenAddress);
@@ -367,7 +367,7 @@ contract AssetRegistry is IAssetRegistry, Pausable, Ownable {
    * TODO: this should be in assembly for efficiency
    */
   function _calculateNewMinFillableAmount() internal view returns (uint) {
-    uint[] memory supplies = new uint[](fillableAssetsCount);
+    uint[] memory supplies = new uint[](_fillableAssetsCount);
     uint j = 0;
     for (uint i = 1; i <= (fillableAssets.length - 1); i++) {
       if (fillableAssets[i].tokenAddress != (address(0))) {
@@ -377,7 +377,7 @@ contract AssetRegistry is IAssetRegistry, Pausable, Ownable {
     }
 
     // sanity check
-    require(fillableAssetsCount == j);
+    require(_fillableAssetsCount == j);
 
     return _getMin(supplies);
   }
