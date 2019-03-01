@@ -7,7 +7,7 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "./TToken.sol";
 
 /**
- * @title VTToken
+ * @title VehicleToken
  * This token contract represents a particular vehicle asset, and tokens are minted for
  * accounts as they invest in them.
  * NOTE: all numbers (except timeframeMonths, annualizedROI, and valuePerTokenCents) will have 18 decimal places to
@@ -17,7 +17,7 @@ import "./TToken.sol";
  *        contract, which itself will only be accessible to that contract owner
  * @author Carlos Beltran <imthatcarlos@gmail.com>
  */
-contract VTToken is ERC20Burnable, ERC20Capped, Ownable {
+contract VehicleToken is ERC20Burnable, ERC20Capped, Ownable {
   using SafeMath for uint;
 
   uint public decimals = 18;  // allows us to divide and retain decimals

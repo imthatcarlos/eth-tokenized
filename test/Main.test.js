@@ -1,8 +1,8 @@
 const util = require('ethereumjs-util');
 
-const VTToken = artifacts.require('./VTToken.sol');
+const VehicleToken = artifacts.require('./VehicleToken.sol');
 const TToken = artifacts.require('./TToken.sol');
-const PTToken = artifacts.require('./PTToken.sol');
+const PortfolioToken = artifacts.require('./PortfolioToken.sol');
 const Main = artifacts.require('./Main.sol');
 const AssetRegistry = artifacts.require('./AssetRegistry.sol')
 
@@ -40,7 +40,7 @@ async function setupAssetRegistryContract(contractOwner) {
 }
 
 async function setupPortfolioContract(contractOwner) {
-  const contract = await PTToken.new();
+  const contract = await PortfolioToken.new();
   await main.setPortfolioToken(contract.address, { from: contractOwner });
   return contract;
 }
@@ -101,7 +101,7 @@ contract('Main', (accounts) => {
     before(async() => {
       await addAsset(accounts[2]);
       assetData = await assetRegistry.getAssetById(1);
-      assetToken = await VTToken.at(assetData.tokenAddress);
+      assetToken = await VehicleToken.at(assetData.tokenAddress);
     });
 
     it('reverts when trying to invest more T tokens than there are VT tokens', async() => {
@@ -135,11 +135,11 @@ contract('Main', (accounts) => {
       await main.investVehicle(investingTokens, assetData.tokenAddress, { from: accounts[3] });
 
       // user now has VT tokens
-      const token = await VTToken.at(assetData.tokenAddress);
+      const token = await VehicleToken.at(assetData.tokenAddress);
       const b = await token.balanceOf(accounts[3]);
       assert.equal(web3.utils.fromWei(b.toString()), CAP);
 
-      // VTToken contract now has T tokens
+      // VehicleToken contract now has T tokens
       const b2 = await stableToken.balanceOf(assetData.tokenAddress);
       assert.equal(web3.utils.fromWei(b2.toString()), investingStable);
 
@@ -198,10 +198,10 @@ contract('Main', (accounts) => {
         await addAsset(accounts[3]);
 
         assetData = await assetRegistry.getAssetById(1);
-        assetToken = await VTToken.at(assetData.tokenAddress);
+        assetToken = await VehicleToken.at(assetData.tokenAddress);
 
         assetData2 = await assetRegistry.getAssetById(2);
-        assetToken2 = await VTToken.at(assetData2.tokenAddress);
+        assetToken2 = await VehicleToken.at(assetData2.tokenAddress);
       });
 
       it('mints an equal amount of PT tokens as T tokens invested', async() => {
@@ -265,13 +265,13 @@ contract('Main', (accounts) => {
           await addAsset(accounts[6]);
 
           assetData = await assetRegistry.getAssetById(3);
-          assetToken = await VTToken.at(assetData.tokenAddress);
+          assetToken = await VehicleToken.at(assetData.tokenAddress);
 
           assetData2 = await assetRegistry.getAssetById(4);
-          assetToken2 = await VTToken.at(assetData2.tokenAddress);
+          assetToken2 = await VehicleToken.at(assetData2.tokenAddress);
 
           assetData3 = await assetRegistry.getAssetById(5);
-          assetToken3 = await VTToken.at(assetData3.tokenAddress);
+          assetToken3 = await VehicleToken.at(assetData3.tokenAddress);
         });
 
         it('distributes T tokens correctly', async() => {
@@ -327,16 +327,16 @@ contract('Main', (accounts) => {
         await addAsset(accounts[5]);
 
         assetData = await assetRegistry.getAssetById(1);
-        assetToken = await VTToken.at(assetData.tokenAddress);
+        assetToken = await VehicleToken.at(assetData.tokenAddress);
 
         assetData2 = await assetRegistry.getAssetById(2);
-        assetToken2 = await VTToken.at(assetData2.tokenAddress);
+        assetToken2 = await VehicleToken.at(assetData2.tokenAddress);
 
         assetData3 = await assetRegistry.getAssetById(3);
-        assetToken3 = await VTToken.at(assetData3.tokenAddress);
+        assetToken3 = await VehicleToken.at(assetData3.tokenAddress);
 
         assetData4 = await assetRegistry.getAssetById(4);
-        assetToken4 = await VTToken.at(assetData4.tokenAddress);
+        assetToken4 = await VehicleToken.at(assetData4.tokenAddress);
 
         // create some prior investments
         const cap = web3.utils.fromWei(await assetToken.cap());

@@ -22,7 +22,7 @@ initially deployed) to access
 ```
 
 #### function investVehicle(uint \_amountStable, address payable \_tokenAddress) public
-Allows the sender to invest in an Asset represented by the VTToken with the given address, sending their T tokens and receiving VT tokens.
+Allows the sender to invest in an Asset represented by the VehicleToken with the given address, sending their T tokens and receiving VT tokens.
 ```
 The sender must have approved the transfer of T tokens to this contract by calling
 `approve(thisContractAddress, amount)` on the TToken contract (stable)
@@ -61,4 +61,4 @@ this method can only be called from the AssetRegistry contract (in addAsset())
 Sets this contract's reference to AssetRegistry contract
 
 #### function setPortfolioToken(address \_contractAddress) public onlyOwner
-Sets this contract's reference to PTToken contract
+Sets this contract's reference to PortfolioToken contract

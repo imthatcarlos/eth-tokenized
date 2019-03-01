@@ -1,7 +1,7 @@
 const Main = artifacts.require("./Main");
 const AssetRegistry = artifacts.require("./AssetRegistry");
 const TToken = artifacts.require("./TToken");
-const PTToken = artifacts.require("./PTToken");
+const PortfolioToken = artifacts.require("./PortfolioToken");
 
 var fs = require("fs");
 var path = require("path");
@@ -15,14 +15,14 @@ module.exports = function(deployer, _network, _accounts) {
 
   // deploy contract
   deployer.deploy(TToken).then(() => {
-    //return deployer.deploy(PTToken).then((portfolioToken) => {
+    //return deployer.deploy(PortfolioToken).then((portfolioToken) => {
       return deployer.deploy(Main, TToken.address).then((main) => {
         return deployer.deploy(AssetRegistry, TToken.address, Main.address).then(() => {
-          return deployer.deploy(PTToken).then((portfolioToken) => {
+          return deployer.deploy(PortfolioToken).then((portfolioToken) => {
             data[network]["Main"] = Main.address;
             data[network]["AssetRegistry"] = AssetRegistry.address;
             data[network]["TToken"] = TToken.address;
-            data[network]["PTToken"] = PTToken.address;
+            data[network]["PortfolioToken"] = PortfolioToken.address;
 
             var json = JSON.stringify(data);
             fs.writeFileSync(filePath, json, "utf8");
@@ -32,7 +32,7 @@ module.exports = function(deployer, _network, _accounts) {
             fs.writeFileSync(srcFilePath, json, "utf8");
 
             // for ref
-            main.setPortfolioToken(PTToken.address);
+            main.setPortfolioToken(PortfolioToken.address);
 
             // give Main contract minting permission
             portfolioToken.addMinter(Main.address);

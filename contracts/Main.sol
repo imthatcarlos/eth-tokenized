@@ -3,9 +3,9 @@ pragma solidity 0.5.0;
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./VTToken.sol";
+import "./VehicleToken.sol";
 import "./TToken.sol";
-import "./PTToken.sol";
+import "./PortfolioToken.sol";
 import "./AssetRegistry.sol";
 
 /**
@@ -42,7 +42,7 @@ contract Main is Ownable, Pausable {
   }
 
   TToken private stableToken;
-  PTToken private portfolioToken;
+  PortfolioToken private portfolioToken;
   AssetRegistry private assetRegistry;
   uint public VALUE_PER_VT_TOKENS_CENTS = 10; // do we need setter? oracle? does it vary between VT contracts?
 
@@ -65,7 +65,7 @@ contract Main is Ownable, Pausable {
 
   /**
    * Contract constructor
-   * @dev To avoid bloating the constructor, deploy the PTToken contract off-chain,
+   * @dev To avoid bloating the constructor, deploy the PortfolioToken contract off-chain,
    *      create reference with `setPortfolioToken()`, and give minting permission to this contract
    * @param _stableTokenAddress Address of T token
    */
@@ -98,11 +98,11 @@ contract Main is Ownable, Pausable {
   }
 
   /**
-   * Sets this contract's reference to PTToken contract
-   * @param _contractAddress Address of PTToken
+   * Sets this contract's reference to PortfolioToken contract
+   * @param _contractAddress Address of PortfolioToken
    */
   function setPortfolioToken(address _contractAddress) public onlyOwner {
-    portfolioToken = PTToken(_contractAddress);
+    portfolioToken = PortfolioToken(_contractAddress);
   }
 
   /**
@@ -134,13 +134,13 @@ contract Main is Ownable, Pausable {
   }
 
   /**
-   * Allows the sender to invest in the Asset represented by the VTToken with the given address
+   * Allows the sender to invest in the Asset represented by the VehicleToken with the given address
    * NOTE: The sender must have approved the transfer of T tokens to this contract
    * @param _amountStable Amount of T tokens the sender is investing
-   * @param _tokenAddress Address of the VTToken contract
+   * @param _tokenAddress Address of the VehicleToken contract
    */
   function investVehicle(uint _amountStable, address payable _tokenAddress) public {
-    VTToken tokenContract = VTToken(_tokenAddress);
+    VehicleToken tokenContract = VehicleToken(_tokenAddress);
 
     // total amount of tokens to mint for the sender
     uint amountTokens = _amountStable.div(tokenContract.valuePerTokenCents());
@@ -337,7 +337,7 @@ contract Main is Ownable, Pausable {
    * @param _tokenAddress Address of VT contract
    */
   function _fillAssetForPortfolio(uint _amountStable, uint _amountTokens, address payable _tokenAddress) internal {
-    VTToken tokenContract = VTToken(_tokenAddress);
+    VehicleToken tokenContract = VehicleToken(_tokenAddress);
 
     // sanity check, make sure we don't overflow
     require(tokenContract.cap() >= tokenContract.totalSupply().add(_amountTokens), 'overflow in VT contract supply');

@@ -1,8 +1,8 @@
 const util = require('ethereumjs-util');
 
-const VTToken = artifacts.require('./VTToken.sol');
+const VehicleToken = artifacts.require('./VehicleToken.sol');
 const TToken = artifacts.require('./TToken.sol');
-const PTToken = artifacts.require('./PTToken.sol');
+const PortfolioToken = artifacts.require('./PortfolioToken.sol');
 const AssetRegistry = artifacts.require('./AssetRegistry.sol');
 const Main = artifacts.require('./Main.sol');
 
@@ -36,7 +36,7 @@ let main;
  }
 
  async function setupPortfolioContract(contractOwner) {
-   const contract = await PTToken.new();
+   const contract = await PortfolioToken.new();
    await main.setPortfolioToken(contract.address, { from: contractOwner });
    return contract;
  }
@@ -128,7 +128,7 @@ contract('AssetRegistry', (accounts) => {
        { from: accounts[0] }
       );
 
-      const token = await VTToken.at(data.tokenAddress);
+      const token = await VehicleToken.at(data.tokenAddress);
       const newData = await token.valueUSD.call();
 
       assert.equal(newData, (VALUE_USD + 1).toString(), 'storage was updated');

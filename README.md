@@ -12,7 +12,7 @@ contracts. The configuration file `truffle.js` is configured to deploy contracts
 [Infura](https://infura.io/) to deploy to Ropsten and Main networks.
 
 Developer Notes:
-- `VTToken` and `PTToken` inherited from ERC223 contract for the `tokenFallback()` function in the overridden
+- `VehicleToken` and `PortfolioToken` inherited from ERC223 contract for the `tokenFallback()` function in the overridden
 `transfer()`. However, when transferring to user wallets, this function failed. So the inheritance was removed. Both
 contracts still fully inherit from ERC20 for standard functionality as well as for minting and burning.
 - To mitigate the heavy computations done on-chain, some functions from `Array256Lib.sol` contract were copied
@@ -40,8 +40,8 @@ Finally, install a geth client like [Ganache](https://github.com/trufflesuite/ga
 Read the docs for the 4 smart contracts:
 - [Main](docs/contracts/Main.md)
 - [AssetRegistry](docs/contracts/AssetRegistry.md)
-- [VTToken](docs/contracts/VTToken.md)
-- [PTToken](docs/contracts/PTToken.md)
+- [VehicleToken](docs/contracts/VehicleToken.md)
+- [PortfolioToken](docs/contracts/PortfolioToken.md)
 
 ### Compile
 ```bash
@@ -97,7 +97,7 @@ Contract: Main
     context: un-even investments, all tokens with same cap
       ✓ invests T tokens appropriately by filling one while investing in others evenly (499ms)
 
-Contract: PTToken
+Contract: PortfolioToken
   addInvestment()
     ✓ reverts if the investor does not have PT tokens
     ✓ reverts if the contract does not have the specified VT tokens (69ms)
@@ -113,7 +113,7 @@ Contract: PTToken
       ✓ burns the investor's PT tokens
       ✓ updates the investment lookup table
 
-Contract: VTToken
+Contract: VehicleToken
   constructor()
     ✓ initializes storage variables (77ms)
   getProjectedProfit()

@@ -3,7 +3,7 @@ pragma solidity 0.5.0;
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./VTToken.sol";
+import "./VehicleToken.sol";
 import "./TToken.sol";
 import "./Main.sol";
 
@@ -77,7 +77,7 @@ contract AssetRegistry is Pausable, Ownable {
   }
 
   /**
-   * Creates an Asset record and adds it to storage, also creating a VTToken contract instance to
+   * Creates an Asset record and adds it to storage, also creating a VehicleToken contract instance to
    * represent the asset
    * @param _owner Owner of the asset
    * @param _name Name of the asset
@@ -98,7 +98,7 @@ contract AssetRegistry is Pausable, Ownable {
     uint _timeframeMonths,
     uint _valuePerTokenCents
   ) external {
-    VTToken token = new VTToken(
+    VehicleToken token = new VehicleToken(
       _owner,
       address(stableToken),
       _name,
@@ -158,7 +158,7 @@ contract AssetRegistry is Pausable, Ownable {
     // sanity check, must be a valid asset contract
     require(tokenToAssetIds[_tokenAddress] != 0);
 
-    VTToken(_tokenAddress).editAssetData(
+    VehicleToken(_tokenAddress).editAssetData(
       _valueUSD,
       _annualizedROI,
       _projectedValueUSD,
@@ -177,12 +177,12 @@ contract AssetRegistry is Pausable, Ownable {
 
 
   /**
-   * Allows an Asset Owner to fund the VTToken contract with T tokens to be distributed to investors
+   * Allows an Asset Owner to fund the VehicleToken contract with T tokens to be distributed to investors
    * @dev should be called when the asset is sold, and any amount of T tokens sent in should
    *      equal the projected profit. this amount is divided amongst token owners based on the percentage
    *      of tokens they own. these token owners must claim their profit, it will NOT be automatically
    *      distributed to avoid security concerns
-   * NOTE: asset owner must have approved the transfer of T tokens from their wallet to the VTToken contract
+   * NOTE: asset owner must have approved the transfer of T tokens from their wallet to the VehicleToken contract
    * @param _amountStable Amount of T tokens the owner will fund - MUST equal the asset's projected value recorded
    * @param _assetId Asset id
    */
@@ -191,7 +191,7 @@ contract AssetRegistry is Pausable, Ownable {
     Asset storage asset = assets[_assetId];
 
     // sanity check
-    require(_amountStable.div(10**18) >= VTToken(asset.tokenAddress).projectedValueUSD());
+    require(_amountStable.div(10**18) >= VehicleToken(asset.tokenAddress).projectedValueUSD());
 
     // send T tokens from owner wallet to the token contract to be claimed by investors
     require(stableToken.transferFrom(msg.sender, asset.tokenAddress, _amountStable));
@@ -228,7 +228,7 @@ contract AssetRegistry is Pausable, Ownable {
     uint total;
     for (uint i = 1; i <= (assets.length - 1); i++) {
       if (assets[i].tokenAddress != address(0)) {
-        total = total.add(VTToken(assets[i].tokenAddress).getCurrentValue());
+        total = total.add(VehicleToken(assets[i].tokenAddress).getCurrentValue());
       }
     }
 
