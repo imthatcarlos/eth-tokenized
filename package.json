@@ -44,6 +44,7 @@
     "truffle-contract": "^4.0.2",
     "truffle-hdwallet-provider": "^1.0.2",
     "truffle-privatekey-provider": "^1.0.0",
-    "web3": "^1.0.0-beta.37"
+    "web3": "^1.0.0-beta.37",
+    "web3-provider-engine": "^14.1.0"
   }
 }
