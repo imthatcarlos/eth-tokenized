@@ -3,9 +3,8 @@ pragma solidity 0.5.0;
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Burnable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Capped.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-//import "./ERC223.sol";
-import "./TToken.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "./TToken.sol";
 
 /**
  * @title VTToken
