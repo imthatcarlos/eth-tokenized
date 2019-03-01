@@ -5,7 +5,7 @@ invest in with a stable token.
 
 These contracts make use of the [OpenZeppelin](https://github.com/OpenZeppelin/openzeppelin-solidity) library for secure
 smart contracts, specifically standard functionality for ERC20 tokens and contract management (ownership/state). I would
-recommend using ZeppelinOS(https://zeppelinos.org/) to make the production contracts upgradable.
+recommend using [ZeppelinOS](https://zeppelinos.org/) to make the production contracts upgradable.
 
 This project uses the [Truffle](https://github.com/trufflesuite/truffle) framework to compile, debug, and deploy
 contracts. The configuration file `truffle.js` is configured to deploy contracts to a specified network, and using
