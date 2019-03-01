@@ -1,7 +1,7 @@
 const util = require('ethereumjs-util');
 
 const VehicleToken = artifacts.require('./VehicleToken.sol');
-const TToken = artifacts.require('./TToken.sol');
+const StableToken = artifacts.require('./StableToken.sol');
 const PortfolioToken = artifacts.require('./PortfolioToken.sol');
 const AssetRegistry = artifacts.require('./AssetRegistry.sol');
 const Main = artifacts.require('./Main.sol');
@@ -61,7 +61,7 @@ async function addAsset(assetOwner) {
 
 contract('AssetRegistry', (accounts) => {
   before(async ()=> {
-    stableToken = await TToken.new({ from: accounts[0] });
+    stableToken = await StableToken.new({ from: accounts[0] });
   });
 
   describe('addAsset()', () => {
@@ -90,10 +90,10 @@ contract('AssetRegistry', (accounts) => {
     });
 
     it('calls Main contract addFillableAsset(), increasing its storage count and updating the min value', async() => {
-      const count = await main.fillableAssetsCount.call();
+      const count = await registry.fillableAssetsCount.call();
       assert.equal(count.toNumber(), '1', 'increased count of fillable assets');
 
-      const minVal = await main.minFillableAmount.call();
+      const minVal = await registry.minFillableAmount.call();
       assert.equal(minVal.toNumber(), CAP, 'this asset is the closest to being filled');
     });
   });

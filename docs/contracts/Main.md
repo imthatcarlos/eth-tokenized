@@ -25,14 +25,14 @@ initially deployed) to access
 Allows the sender to invest in an Asset represented by the VehicleToken with the given address, sending their T tokens and receiving VT tokens.
 ```
 The sender must have approved the transfer of T tokens to this contract by calling
-`approve(thisContractAddress, amount)` on the TToken contract (stable)
+`approve(thisContractAddress, amount)` on the StableToken contract (stable)
 ```
 
 #### function investPortfolio(uint \_amountStable) public
 Allows the sender to invest in a basket of VT Token contracts
 ```
 The sender must have approved the transfer of T tokens to this contract by calling
-`approve(thisContractAddress, amount)` on the TToken contract (stable)
+`approve(thisContractAddress, amount)` on the StableToken contract (stable)
 ```
 
 #### function getActiveInvestmentIds() public hasActiveInvestment

@@ -3,8 +3,8 @@ pragma solidity 0.5.0;
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "./IAssetRegistry.sol";
 import "./VehicleToken.sol";
-import "./TToken.sol";
 import "./Main.sol";
 
 /**
@@ -14,12 +14,8 @@ import "./Main.sol";
  *
  * @author Carlos Beltran <imthatcarlos@gmail.com>
  */
-contract AssetRegistry is Pausable, Ownable {
+contract AssetRegistry is IAssetRegistry, Pausable, Ownable {
   using SafeMath for uint;
-
-  event AssetRecordCreated(address tokenAddress, address assetOwner, uint id);
-  event AssetRecordUpdated(address indexed tokenAddress, uint id);
-  event AssetFunded(uint id, address tokenAddress);
 
   struct Asset {
     address owner;
@@ -28,15 +24,22 @@ contract AssetRegistry is Pausable, Ownable {
     bool funded;
   }
 
-  TToken private stableToken;
+  struct FillableAsset {
+    address payable tokenAddress;
+    uint tokenSupply;
+  }
+
+  uint public fillableAssetsCount;
+  uint public minFillableAmount; // minimum tokens required to fill one Asset
+
+  StableToken private stableToken;
   address private mainContractAddress;
+  uint[] private assetProjectedValuesUSD; // allows us to easily calculate the total value of all assets
 
   Asset[] private assets;
+  FillableAsset[] private fillableAssets;
   mapping (address => uint[]) private ownerToAssetIds;
   mapping (address => uint) private tokenToAssetIds;
-
-  // allows us to easily calculate the total value of all assets
-  uint[] private assetProjectedValuesUSD;
 
   modifier hasActiveAsset() {
     require(ownerToAssetIds[msg.sender].length != 0, "must have an active asset");
@@ -54,7 +57,7 @@ contract AssetRegistry is Pausable, Ownable {
   }
 
   constructor(address _stableTokenAddress, address _mainContractAddress) public {
-    stableToken = TToken(_stableTokenAddress);
+    stableToken = StableToken(_stableTokenAddress);
     mainContractAddress = _mainContractAddress;
 
     // take care of zero-index for storage array
@@ -63,6 +66,11 @@ contract AssetRegistry is Pausable, Ownable {
       tokenAddress: address(0),
       filled: false,
       funded: false
+    }));
+
+    fillableAssets.push(FillableAsset({
+      tokenAddress: address(0),
+      tokenSupply: 0
     }));
 
     assetProjectedValuesUSD.push(0);
@@ -113,8 +121,8 @@ contract AssetRegistry is Pausable, Ownable {
     // so the main contract can mint
     token.addMinter(mainContractAddress);
 
-    // so main contract is always in sync
-    Main(mainContractAddress).addFillableAsset(address(token), _cap);
+    // so the main contract can later reference
+    _addFillableAsset(address(token), _cap);
 
     Asset memory record = Asset({
       owner: _owner,
@@ -175,6 +183,45 @@ contract AssetRegistry is Pausable, Ownable {
     emit AssetRecordUpdated(_tokenAddress, id);
   }
 
+  /**
+   * Update storage mappings that reflect global state of token contract funding and storage variables that
+   * assist in calculations needed for Portfolio investing
+   * NOTE: can only be called by Main contract
+   * @param _tokenAddress Address of VT contract
+   * @param _remainingSupply Remaining supply of tokens available in this VT contract
+   * @param _tokensMinted Amount of tokens just minted for this asset
+   */
+  function updateAssetLookup(address _tokenAddress, uint _remainingSupply, uint _tokensMinted) public {
+    require(msg.sender == mainContractAddress);
+
+    uint id = tokenToAssetIds[_tokenAddress];
+    if (_remainingSupply == 0) {
+      // delete from lookup
+      delete fillableAssets[id];
+
+      // part of calculation
+      fillableAssetsCount = fillableAssetsCount.sub(1);
+
+      // what if this was the min? (and there's more assets)
+      if (_tokensMinted == minFillableAmount && fillableAssetsCount > 0) {
+        minFillableAmount = _calculateNewMinFillableAmount();
+      } else if (fillableAssetsCount == 0) {
+        minFillableAmount = 0;
+      }
+
+      // update record
+      assets[id].filled = true;
+
+      // who cares?
+      emit AssetFullyInvested(_tokenAddress, msg.sender);
+    } else {
+      fillableAssets[id].tokenSupply = _remainingSupply;
+
+      if (_remainingSupply < minFillableAmount || minFillableAmount == 0) {
+        minFillableAmount = _remainingSupply;
+      }
+    }
+  }
 
   /**
    * Allows an Asset Owner to fund the VehicleToken contract with T tokens to be distributed to investors
@@ -199,18 +246,6 @@ contract AssetRegistry is Pausable, Ownable {
     asset.funded = true;
 
     emit AssetFunded(_assetId, asset.tokenAddress);
-  }
-
-  /**
-   * Updates the asset record to filled when fully invested
-   * @param _assetId Storage array id of the asset
-   * NOTE: this method may only be called by the Main contract (in _updateAssetLookup())
-   */
-  function setAssetFilled(uint _assetId) public validAsset(_assetId) {
-    // only the Main contract may call
-    require(msg.sender == mainContractAddress);
-
-    assets[_assetId].filled = true;
   }
 
   /**
@@ -266,6 +301,22 @@ contract AssetRegistry is Pausable, Ownable {
   }
 
   /**
+   * Returns the address (or zero-address) for the fillabel asset at the given id
+   * @param _id Asset id
+   */
+  function getFillableAssetAddressAt(uint _id) public view returns(address payable tokenAddress) {
+    return fillableAssets[_id].tokenAddress;
+  }
+
+  function getFillableAssetsCount() public view returns(uint) {
+    return fillableAssetsCount;
+  }
+
+  function getMinFillableAmount() public view returns(uint) {
+    return minFillableAmount;
+  }
+
+  /**
    * Returns details of the Asset with the given id
    * @param _id Asset id
    */
@@ -286,6 +337,67 @@ contract AssetRegistry is Pausable, Ownable {
     tokenAddress = asset.tokenAddress;
     filled = asset.filled;
     funded = asset.funded;
+  }
+
+  /**
+   * Adds the new asset token contract to our lookup table for PT calculations, and updates
+   * helper variables `minFillableAmount` and `fillableAssetsCount`
+   * @param _tokenAddress Address of new VT contract
+   * @param _cap Token cap of the asset
+   */
+  function _addFillableAsset(address payable _tokenAddress, uint _cap) internal {
+    fillableAssets.push(FillableAsset({
+      tokenAddress: _tokenAddress,
+      tokenSupply: _cap
+    }));
+
+    // is this asset fillable quicker?
+    if (minFillableAmount == 0 || _cap < minFillableAmount) {
+      minFillableAmount = _cap;
+    }
+
+    fillableAssetsCount = fillableAssetsCount.add(1);
+
+    // hacky: allows the token contract contract to mint T tokens it needs to satisfy investor claims
+    stableToken.addMinter(_tokenAddress);
+  }
+
+  /**
+   * Calculate a new minimum fillable amount for all fillable assets
+   * TODO: this should be in assembly for efficiency
+   */
+  function _calculateNewMinFillableAmount() internal view returns (uint) {
+    uint[] memory supplies = new uint[](fillableAssetsCount);
+    uint j = 0;
+    for (uint i = 1; i <= (fillableAssets.length - 1); i++) {
+      if (fillableAssets[i].tokenAddress != (address(0))) {
+        supplies[j] = fillableAssets[i].tokenSupply; // out-of-bounds should not occur...
+        j = j.add(1);
+      }
+    }
+
+    // sanity check
+    require(fillableAssetsCount == j);
+
+    return _getMin(supplies);
+  }
+
+  /// @dev Returns the minimum value in an array.
+  /// @param self Storage array containing uint256 type variables
+  /// @return minValue The smallest value in the array
+  /// https://github.com/Modular-Network/ethereum-libraries/contracts/Array256Lib.sol
+  function _getMin(uint256[] memory self) internal view returns (uint256 minValue) {
+    assembly {
+      mstore(0x60,self)
+      minValue := sload(keccak256(0x60,0x20))
+
+      for { let i := 0 } lt(i, sload(self)) { i := add(i, 1) } {
+        switch gt(sload(add(keccak256(0x60,0x20),i)), minValue)
+        case 0 {
+          minValue := sload(add(keccak256(0x60,0x20),i))
+        }
+      }
+    }
   }
 
   /// @dev Sum vector

@@ -1,7 +1,7 @@
 const util = require('ethereumjs-util');
 
 const VehicleToken = artifacts.require('./VehicleToken.sol');
-const TToken = artifacts.require('./TToken.sol');
+const StableToken = artifacts.require('./StableToken.sol');
 const PortfolioToken = artifacts.require('./PortfolioToken.sol');
 const Main = artifacts.require('./Main.sol');
 const AssetRegistry = artifacts.require('./AssetRegistry.sol')
@@ -79,7 +79,7 @@ async function fundAsset(assetOwner) {
 
 contract('Main', (accounts) => {
   before(async ()=> {
-    stableToken = await TToken.new();
+    stableToken = await StableToken.new();
     main = await setupMainContract(accounts[0]);
     assetRegistry = await setupAssetRegistryContract(accounts[0]);
     portfolioToken = await setupPortfolioContract(accounts[0]);
@@ -168,8 +168,8 @@ contract('Main', (accounts) => {
       assert.equal(assetData.filled, false, 'storage was NOT updated')
     });
 
-    it('off the last test, it does update minFillableAmount on Main', async() => {
-      const minVal = await main.minFillableAmount.call();
+    it('off the last test, it does update minFillableAmount on AssetRegistry', async() => {
+      const minVal = await assetRegistry.minFillableAmount.call();
       assert.equal(web3.utils.fromWei(minVal), (CAP / 2), 'storage was update to the remaining tokens of this asset');
     });
   });
@@ -177,7 +177,7 @@ contract('Main', (accounts) => {
   describe('investPortfolio()', () => {
     before(async() => {
       // refresh contracts
-      stableToken = await TToken.new({ from: accounts[0] });
+      stableToken = await StableToken.new({ from: accounts[0] });
       main = await setupMainContract(accounts[0]);
       assetRegistry = await setupAssetRegistryContract(accounts[0]);
       portfolioToken = await setupPortfolioContract(accounts[0]);
@@ -312,7 +312,7 @@ contract('Main', (accounts) => {
 
       before(async() => {
         // refresh contracts
-        stableToken = await TToken.new();
+        stableToken = await StableToken.new();
         main = await setupMainContract(accounts[0]);
         assetRegistry = await setupAssetRegistryContract(accounts[0]);
         portfolioToken = await setupPortfolioContract(accounts[0]);

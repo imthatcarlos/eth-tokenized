@@ -4,7 +4,8 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20Burnable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Capped.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "./TToken.sol";
+import "./IVehicleToken.sol";
+import "./StableToken.sol";
 
 /**
  * @title VehicleToken
@@ -17,7 +18,7 @@ import "./TToken.sol";
  *        contract, which itself will only be accessible to that contract owner
  * @author Carlos Beltran <imthatcarlos@gmail.com>
  */
-contract VehicleToken is ERC20Burnable, ERC20Capped, Ownable {
+contract VehicleToken is IVehicleToken, ERC20Burnable, ERC20Capped, Ownable {
   using SafeMath for uint;
 
   uint public decimals = 18;  // allows us to divide and retain decimals
@@ -35,7 +36,7 @@ contract VehicleToken is ERC20Burnable, ERC20Capped, Ownable {
   uint public timeframeMonths;         // timeframe to be sold (months)
   uint public valuePerTokenCents;
 
-  TToken private stableToken;
+  StableToken private stableToken;
 
   // mapping(address => uint) mintedAtTimestamps; // lets us track when tokens were minted for which address
 
@@ -75,7 +76,7 @@ contract VehicleToken is ERC20Burnable, ERC20Capped, Ownable {
     createdAt = block.timestamp; // solium-disable-line security/no-block-members, whitespace
     timeframeMonths = _timeframeMonths;
     valuePerTokenCents = _valuePerTokenCents;
-    stableToken = TToken(_stableTokenAddress);
+    stableToken = StableToken(_stableTokenAddress);
     assetOwner = _assetOwner;
   }
 

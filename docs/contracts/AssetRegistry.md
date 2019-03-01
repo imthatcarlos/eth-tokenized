@@ -46,7 +46,7 @@ to avoid security concerns
 
 ```
 The sender must have approved the transfer of T tokens to this contract by calling
-`approve(thisContractAddress, amount)` on the TToken contract (stable)
+`approve(thisContractAddress, amount)` on the StableToken contract (stable)
 ```
 
 #### function setAssetFilled(uint \_assetId) public validAsset(\_assetId)

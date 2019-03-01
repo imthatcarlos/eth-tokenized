@@ -1,7 +1,7 @@
 const util = require('ethereumjs-util');
 
 const VehicleToken = artifacts.require('./VehicleToken.sol');
-const TToken = artifacts.require('./TToken.sol');
+const StableToken = artifacts.require('./StableToken.sol');
 const PortfolioToken = artifacts.require('./PortfolioToken.sol');
 const Main = artifacts.require('./Main.sol');
 const AssetRegistry = artifacts.require('./AssetRegistry.sol')
@@ -80,7 +80,7 @@ contract('PortfolioToken', (accounts) => {
     before(async ()=> {
       web3.currentProvider.sendAsync = web3.currentProvider.send.bind(web3.currentProvider);
 
-      stableToken = await TToken.new({ from: accounts[0] });
+      stableToken = await StableToken.new({ from: accounts[0] });
       main = await setupMainContract(accounts[0]);
       assetRegistry = await setupAssetRegistryContract(accounts[0]);
       portfolioToken = await setupPortfolioContract(accounts[0]);
@@ -111,7 +111,7 @@ contract('PortfolioToken', (accounts) => {
 
   describe('claimFundsAndBurn()', async() => {
     before(async ()=> {
-      stableToken = await TToken.new({ from: accounts[0] });
+      stableToken = await StableToken.new({ from: accounts[0] });
       main = await setupMainContract(accounts[0]);
       assetRegistry = await setupAssetRegistryContract(accounts[0]);
       portfolioToken = await setupPortfolioContract(accounts[0]);
