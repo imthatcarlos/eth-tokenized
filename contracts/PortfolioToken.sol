@@ -3,15 +3,16 @@ pragma solidity 0.5.0;
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Burnable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Mintable.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./VTToken.sol";
+import "./IPortfolioToken.sol";
+import "./VehicleToken.sol";
 
 /**
- * @title PTToken
- * This token contract represents an investment in a basket of Assets, or VTToken contracts
+ * @title PortfolioToken
+ * This token contract represents an investment in a basket of Assets, or VehicleToken contracts
  *
  * @author Carlos Beltran <imthatcarlos@gmail.com>
  */
-contract PTToken is ERC20Burnable, ERC20Mintable {
+contract PortfolioToken is IPortfolioToken, ERC20Burnable, ERC20Mintable {
   using SafeMath for uint;
 
   uint public decimals = 18;  // allows us to divide and retain decimals
@@ -42,10 +43,10 @@ contract PTToken is ERC20Burnable, ERC20Mintable {
   //   // the investor must have already received PT tokens
   //   require(balanceOf(_investor) > 0);
   //   // this contract must have received the VT tokens
-  //   require(VTToken(_tokenAddress).balanceOf(address(this)) >= _amountTokens);
+  //   require(VehicleToken(_tokenAddress).balanceOf(address(this)) >= _amountTokens);
   //
   //   // log an allowance for future ref
-  //   require(VTToken(_tokenAddress).approve(_investor, _amountTokens));
+  //   require(VehicleToken(_tokenAddress).approve(_investor, _amountTokens));
   //
   //   return true;
   // }
@@ -66,7 +67,7 @@ contract PTToken is ERC20Burnable, ERC20Mintable {
     // the investor must have already received PT tokens
     require(balanceOf(_investor) > 0, 'investor does not have PT tokens');
     // this contract must have received the VT tokens
-    require(VTToken(_tokenAddress).balanceOf(address(this)) >= _amountTokens, 'invalid value for _amountTokens');
+    require(VehicleToken(_tokenAddress).balanceOf(address(this)) >= _amountTokens, 'invalid value for _amountTokens');
 
     // log whether we have holdings in this asset
     if (tokenHasInvestment[_tokenAddress] == false) {
@@ -95,7 +96,7 @@ contract PTToken is ERC20Burnable, ERC20Mintable {
     // given the above % ownership, send VT tokens from each of this contract's holdings
     for (uint i = 0; i < tokenInvestments.length; i++) {
       if (tokenInvestments[i] != address(0)) {
-        VTToken token = VTToken(tokenInvestments[i]);
+        VehicleToken token = VehicleToken(tokenInvestments[i]);
         uint amount = (token.balanceOf(address(this)).mul(ownershipPercentage)).div(10**20);
         // transfer
         require(token.transfer(msg.sender, amount), 'transfer of VT tokens failed');
@@ -126,7 +127,7 @@ contract PTToken is ERC20Burnable, ERC20Mintable {
     uint total;
     for (uint i = 0; i < tokenInvestments.length; i++) {
       if (tokenInvestments[i] != address(0)) {
-        total = total.add(VTToken(tokenInvestments[i]).getCurrentValuePortfolio());
+        total = total.add(VehicleToken(tokenInvestments[i]).getCurrentValuePortfolio());
       }
     }
 
@@ -147,7 +148,7 @@ contract PTToken is ERC20Burnable, ERC20Mintable {
     uint total;
     for (uint i = 0; i < tokenInvestments.length; i++) {
       if (tokenInvestments[i] != address(0)) {
-        total = total.add(VTToken(tokenInvestments[i]).projectedValueUSD());
+        total = total.add(VehicleToken(tokenInvestments[i]).projectedValueUSD());
       }
     }
 

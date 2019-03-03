@@ -1,7 +1,7 @@
 const Main = artifacts.require("./Main");
 const AssetRegistry = artifacts.require("./AssetRegistry");
-const TToken = artifacts.require("./TToken");
-const PTToken = artifacts.require("./PTToken");
+const StableToken = artifacts.require("./StableToken");
+const PortfolioToken = artifacts.require("./PortfolioToken");
 
 var fs = require("fs");
 var path = require("path");
@@ -14,34 +14,32 @@ module.exports = function(deployer, _network, _accounts) {
   var data = JSON.parse(fs.readFileSync(filePath, "utf8"));
 
   // deploy contract
-  deployer.deploy(TToken).then(() => {
-    //return deployer.deploy(PTToken).then((portfolioToken) => {
-      return deployer.deploy(Main, TToken.address).then((main) => {
-        return deployer.deploy(AssetRegistry, TToken.address, Main.address).then(() => {
-          return deployer.deploy(PTToken).then((portfolioToken) => {
-            data[network]["Main"] = Main.address;
-            data[network]["AssetRegistry"] = AssetRegistry.address;
-            data[network]["TToken"] = TToken.address;
-            data[network]["PTToken"] = PTToken.address;
+  deployer.deploy(StableToken).then(() => {
+    return deployer.deploy(Main, StableToken.address).then((main) => {
+      return deployer.deploy(AssetRegistry, StableToken.address, Main.address).then(() => {
+        return deployer.deploy(PortfolioToken).then((portfolioToken) => {
+          data[network]["Main"] = Main.address;
+          data[network]["AssetRegistry"] = AssetRegistry.address;
+          data[network]["StableToken"] = StableToken.address;
+          data[network]["PortfolioToken"] = PortfolioToken.address;
 
-            var json = JSON.stringify(data);
-            fs.writeFileSync(filePath, json, "utf8");
+          var json = JSON.stringify(data);
+          fs.writeFileSync(filePath, json, "utf8");
 
-            // write to src/ directory as well
-            const srcFilePath = path.join(__dirname, "./../src/json/contracts.json");
-            fs.writeFileSync(srcFilePath, json, "utf8");
+          // write to src/ directory as well
+          const srcFilePath = path.join(__dirname, "./../src/json/contracts.json");
+          fs.writeFileSync(srcFilePath, json, "utf8");
 
-            // for ref
-            main.setPortfolioToken(PTToken.address);
+          // for ref
+          main.setPortfolioToken(PortfolioToken.address);
 
-            // give Main contract minting permission
-            portfolioToken.addMinter(Main.address);
+          // give Main contract minting permission
+          portfolioToken.addMinter(Main.address);
 
-            // for ref
-            main.setAssetRegistry(AssetRegistry.address);
-          });
+          // for ref
+          main.setAssetRegistry(AssetRegistry.address);
         });
       });
-    //})
+    });
   });
 };

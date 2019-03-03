@@ -1,8 +1,8 @@
 const util = require('ethereumjs-util');
 
-const VTToken = artifacts.require('./VTToken.sol');
-const TToken = artifacts.require('./TToken.sol');
-const PTToken = artifacts.require('./PTToken.sol');
+const VehicleToken = artifacts.require('./VehicleToken.sol');
+const StableToken = artifacts.require('./StableToken.sol');
+const PortfolioToken = artifacts.require('./PortfolioToken.sol');
 const Main = artifacts.require('./Main.sol');
 const AssetRegistry = artifacts.require('./AssetRegistry.sol')
 
@@ -40,7 +40,7 @@ async function setupAssetRegistryContract(contractOwner) {
 }
 
 async function setupPortfolioContract(contractOwner) {
-  const contract = await PTToken.new();
+  const contract = await PortfolioToken.new();
   await main.setPortfolioToken(contract.address, { from: contractOwner });
   return contract;
 }
@@ -79,7 +79,7 @@ async function fundAsset(assetOwner) {
 
 contract('Main', (accounts) => {
   before(async ()=> {
-    stableToken = await TToken.new();
+    stableToken = await StableToken.new();
     main = await setupMainContract(accounts[0]);
     assetRegistry = await setupAssetRegistryContract(accounts[0]);
     portfolioToken = await setupPortfolioContract(accounts[0]);
@@ -88,7 +88,7 @@ contract('Main', (accounts) => {
     await portfolioToken.addMinter(main.address, { from: accounts[0] });
 
     // hacky: give permission for stable token as well
-    await stableToken.addMinter(main.address, { from: accounts[0] });
+    await stableToken.addMinter(assetRegistry.address, { from: accounts[0] });
   });
 
   describe('constructor()', () => {
@@ -101,7 +101,7 @@ contract('Main', (accounts) => {
     before(async() => {
       await addAsset(accounts[2]);
       assetData = await assetRegistry.getAssetById(1);
-      assetToken = await VTToken.at(assetData.tokenAddress);
+      assetToken = await VehicleToken.at(assetData.tokenAddress);
     });
 
     it('reverts when trying to invest more T tokens than there are VT tokens', async() => {
@@ -135,11 +135,11 @@ contract('Main', (accounts) => {
       await main.investVehicle(investingTokens, assetData.tokenAddress, { from: accounts[3] });
 
       // user now has VT tokens
-      const token = await VTToken.at(assetData.tokenAddress);
+      const token = await VehicleToken.at(assetData.tokenAddress);
       const b = await token.balanceOf(accounts[3]);
       assert.equal(web3.utils.fromWei(b.toString()), CAP);
 
-      // VTToken contract now has T tokens
+      // VehicleToken contract now has T tokens
       const b2 = await stableToken.balanceOf(assetData.tokenAddress);
       assert.equal(web3.utils.fromWei(b2.toString()), investingStable);
 
@@ -168,8 +168,8 @@ contract('Main', (accounts) => {
       assert.equal(assetData.filled, false, 'storage was NOT updated')
     });
 
-    it('off the last test, it does update minFillableAmount on Main', async() => {
-      const minVal = await main.minFillableAmount.call();
+    it('off the last test, it does update minFillableAmount on AssetRegistry', async() => {
+      const minVal = await assetRegistry.minFillableAmount.call();
       assert.equal(web3.utils.fromWei(minVal), (CAP / 2), 'storage was update to the remaining tokens of this asset');
     });
   });
@@ -177,13 +177,13 @@ contract('Main', (accounts) => {
   describe('investPortfolio()', () => {
     before(async() => {
       // refresh contracts
-      stableToken = await TToken.new({ from: accounts[0] });
+      stableToken = await StableToken.new({ from: accounts[0] });
       main = await setupMainContract(accounts[0]);
       assetRegistry = await setupAssetRegistryContract(accounts[0]);
       portfolioToken = await setupPortfolioContract(accounts[0]);
       await portfolioToken.addMinter(main.address, { from: accounts[0] });
       // hacky: give permission for stable token as well
-      await stableToken.addMinter(main.address, { from: accounts[0] });
+      await stableToken.addMinter(assetRegistry.address, { from: accounts[0] });
     });
 
     it('reverts when there are no assets to invest in', async() => {
@@ -198,10 +198,10 @@ contract('Main', (accounts) => {
         await addAsset(accounts[3]);
 
         assetData = await assetRegistry.getAssetById(1);
-        assetToken = await VTToken.at(assetData.tokenAddress);
+        assetToken = await VehicleToken.at(assetData.tokenAddress);
 
         assetData2 = await assetRegistry.getAssetById(2);
-        assetToken2 = await VTToken.at(assetData2.tokenAddress);
+        assetToken2 = await VehicleToken.at(assetData2.tokenAddress);
       });
 
       it('mints an equal amount of PT tokens as T tokens invested', async() => {
@@ -229,8 +229,8 @@ contract('Main', (accounts) => {
         assert.equal(b, b2 , 'assets were invested in evenly');
       });
 
-      it('updates the lookup of fillable assets count to 0', async() => {
-        const count = await main.fillableAssetsCount.call();
+      it('updates the lookup of fillable assets count to 0 (on AssetRegistry)', async() => {
+        const count = await assetRegistry.fillableAssetsCount();
         assert.equal(count, '0', 'storage was updated');
       });
 
@@ -265,13 +265,13 @@ contract('Main', (accounts) => {
           await addAsset(accounts[6]);
 
           assetData = await assetRegistry.getAssetById(3);
-          assetToken = await VTToken.at(assetData.tokenAddress);
+          assetToken = await VehicleToken.at(assetData.tokenAddress);
 
           assetData2 = await assetRegistry.getAssetById(4);
-          assetToken2 = await VTToken.at(assetData2.tokenAddress);
+          assetToken2 = await VehicleToken.at(assetData2.tokenAddress);
 
           assetData3 = await assetRegistry.getAssetById(5);
-          assetToken3 = await VTToken.at(assetData3.tokenAddress);
+          assetToken3 = await VehicleToken.at(assetData3.tokenAddress);
         });
 
         it('distributes T tokens correctly', async() => {
@@ -312,13 +312,13 @@ contract('Main', (accounts) => {
 
       before(async() => {
         // refresh contracts
-        stableToken = await TToken.new();
+        stableToken = await StableToken.new();
         main = await setupMainContract(accounts[0]);
         assetRegistry = await setupAssetRegistryContract(accounts[0]);
         portfolioToken = await setupPortfolioContract(accounts[0]);
         await portfolioToken.addMinter(main.address, { from: accounts[0] });
         // hacky: give permission for stable token as well
-        await stableToken.addMinter(main.address, { from: accounts[0] });
+        await stableToken.addMinter(assetRegistry.address, { from: accounts[0] });
 
         // now prepare scenario
         await addAsset(accounts[2]);
@@ -327,16 +327,16 @@ contract('Main', (accounts) => {
         await addAsset(accounts[5]);
 
         assetData = await assetRegistry.getAssetById(1);
-        assetToken = await VTToken.at(assetData.tokenAddress);
+        assetToken = await VehicleToken.at(assetData.tokenAddress);
 
         assetData2 = await assetRegistry.getAssetById(2);
-        assetToken2 = await VTToken.at(assetData2.tokenAddress);
+        assetToken2 = await VehicleToken.at(assetData2.tokenAddress);
 
         assetData3 = await assetRegistry.getAssetById(3);
-        assetToken3 = await VTToken.at(assetData3.tokenAddress);
+        assetToken3 = await VehicleToken.at(assetData3.tokenAddress);
 
         assetData4 = await assetRegistry.getAssetById(4);
-        assetToken4 = await VTToken.at(assetData4.tokenAddress);
+        assetToken4 = await VehicleToken.at(assetData4.tokenAddress);
 
         // create some prior investments
         const cap = web3.utils.fromWei(await assetToken.cap());

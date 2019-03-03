@@ -23,7 +23,7 @@ data is valid. those with `onlyAssetOwner` only allow the asset owner to access,
 ```
 
 #### function addAsset(address payable owner, string calldata \_name, uint \_valueUSD, uint \_cap, uint \_annualizedROI, uint \_projectedValueUSD, uint \_timeframeMonths, uint \_valuePerTokenCents) public
-Creates an Asset record and adds it to storage, also creating a VTToken contract instance to represent the asset
+Creates an Asset record and adds it to storage, also creating a VehicleToken contract instance to represent the asset
 ```
 The only contracts that are able to mint tokens for the newly created VT contract are this AssetRegistry contract and the Main contract. If architecture changes, new contracts can
 be given minting permission with `addMinter()`
@@ -36,7 +36,7 @@ we don't allow editing the token cap of the contract as it would jeopardize the 
 ```
 
 #### function fundAsset(uint \_amountStable, uint \_assetId) public onlyAssetOwner(\_assetId)
-Allows an Asset owner to fund the VTToken contract with T tokens to be distributed to investors
+Allows an Asset owner to fund the VehicleToken contract with T tokens to be distributed to investors
 ```
 should be called when the asset is sold, and any amount of T tokens sent in should equal the
 projected profit. this amount is divided amongst token owners based on the percentage of tokens
@@ -46,7 +46,7 @@ to avoid security concerns
 
 ```
 The sender must have approved the transfer of T tokens to this contract by calling
-`approve(thisContractAddress, amount)` on the TToken contract (stable)
+`approve(thisContractAddress, amount)` on the StableToken contract (stable)
 ```
 
 #### function setAssetFilled(uint \_assetId) public validAsset(\_assetId)
