@@ -14,6 +14,9 @@ interface IPortfolioToken {
   function calculateTotalProjectedValue() external view returns(uint);
   function getCurrentOwnershipPercentage() external view returns(uint);
 
-  // erc20 mintable
+  // openzeppelin-solidity/contracts/token/ERC20/ERC20Mintable.sol
   function mint(address to, uint256 value) external returns(bool);
+
+  // openzeppelin-solidity/contracts/access/roles/MinterRole.sol
+  function addMinter(address account) external;
 }

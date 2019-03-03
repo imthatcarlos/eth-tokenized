@@ -73,8 +73,8 @@ contract('AssetRegistry', (accounts) => {
       // give Main contract minting permission
       await portfolioToken.addMinter(main.address, { from: accounts[0] });
 
-      // hacky: give permission for stable token as well
-      await stableToken.addMinter(main.address, { from: accounts[0] });
+      // hacky: give permission for AssetRegistry to add minters
+      await stableToken.addMinter(registry.address, { from: accounts[0] });
     });
 
     it('adds the asset to storage', async() => {
@@ -142,7 +142,7 @@ contract('AssetRegistry', (accounts) => {
       portfolioToken = await setupPortfolioContract(accounts[0]);
       await portfolioToken.addMinter(main.address, { from: accounts[0] });
       // hacky: give permission for stable token as well
-      await stableToken.addMinter(main.address, { from: accounts[0] });
+      await stableToken.addMinter(registry.address, { from: accounts[0] });
 
       await addAsset(accounts[3]);
     });

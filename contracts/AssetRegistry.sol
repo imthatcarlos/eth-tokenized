@@ -5,7 +5,6 @@ import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./IAssetRegistry.sol";
 import "./VehicleToken.sol";
-import "./Main.sol";
 
 /**
  * @title AssetRegistry
@@ -29,12 +28,11 @@ contract AssetRegistry is IAssetRegistry, Pausable, Ownable {
     uint tokenSupply;
   }
 
-  uint public _fillableAssetsCount;
-  uint public _minFillableAmount; // minimum tokens required to fill one Asset
-
   StableToken private stableToken;
   address private mainContractAddress;
   uint[] private assetProjectedValuesUSD; // allows us to easily calculate the total value of all assets
+  uint private _fillableAssetsCount;
+  uint private _minFillableAmount; // minimum tokens required to fill one Asset
 
   Asset[] private assets;
   FillableAsset[] private fillableAssets;
@@ -191,7 +189,7 @@ contract AssetRegistry is IAssetRegistry, Pausable, Ownable {
    * @param _remainingSupply Remaining supply of tokens available in this VT contract
    * @param _tokensMinted Amount of tokens just minted for this asset
    */
-  function updateAssetLookup(address _tokenAddress, uint _remainingSupply, uint _tokensMinted) public {
+  function updateAssetLookup(address _tokenAddress, uint _remainingSupply, uint _tokensMinted) public returns(bool) {
     require(msg.sender == mainContractAddress);
 
     uint id = tokenToAssetIds[_tokenAddress];
@@ -221,6 +219,8 @@ contract AssetRegistry is IAssetRegistry, Pausable, Ownable {
         _minFillableAmount = _remainingSupply;
       }
     }
+
+    return true;
   }
 
   /**
@@ -301,22 +301,6 @@ contract AssetRegistry is IAssetRegistry, Pausable, Ownable {
   }
 
   /**
-   * Returns the address (or zero-address) for the fillabel asset at the given id
-   * @param _id Asset id
-   */
-  function getFillableAssetAddressAt(uint _id) public view returns(address payable tokenAddress) {
-    return fillableAssets[_id].tokenAddress;
-  }
-
-  function fillableAssetsCount() public view returns(uint) {
-    return _fillableAssetsCount;
-  }
-
-  function minFillableAmount() public view returns(uint) {
-    return _minFillableAmount;
-  }
-
-  /**
    * Returns details of the Asset with the given id
    * @param _id Asset id
    */
@@ -337,6 +321,30 @@ contract AssetRegistry is IAssetRegistry, Pausable, Ownable {
     tokenAddress = asset.tokenAddress;
     filled = asset.filled;
     funded = asset.funded;
+  }
+
+  /**
+   * Returns storage value for _fillableAssetsCount
+   * @dev needed to implement for interface
+   */
+  function fillableAssetsCount() public view returns(uint) {
+    return _fillableAssetsCount;
+  }
+
+  /**
+   * Returns storage value for _minFillableAmount
+   * @dev needed to implement for interface
+   */
+  function minFillableAmount() public view returns(uint) {
+    return _minFillableAmount;
+  }
+
+  /**
+   * Returns the address (or zero-address) for the fillable asset at the given id
+   * @param _id Asset id
+   */
+  function getFillableAssetAddressAt(uint _id) public view returns(address payable tokenAddress) {
+    return fillableAssets[_id].tokenAddress;
   }
 
   /**

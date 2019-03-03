@@ -265,7 +265,8 @@ contract Main is Ownable, Pausable {
 
     // iterate over our asset lookup and if the element is present, it is because it's still fillable
     uint amountInvested = 0;
-    for (uint i = 1; i <= (count - 1); i++) {
+    uint fillableAssetsIterate = assetRegistry.getAssetsCount();
+    for (uint i = 1; i <= fillableAssetsIterate; i++) {
       address payable fillableAddress = assetRegistry.getFillableAssetAddressAt(i);
       if (fillableAddress != (address(0))) {
         _fillAssetForPortfolio(amountStableEach, amountTokensEach, fillableAddress);
@@ -312,10 +313,8 @@ contract Main is Ownable, Pausable {
 
     require(portfolioToken.addInvestment(_tokenAddress, msg.sender, _amountTokens), 'failed adding investment');
 
-    // update our records of token supplies
-    uint remainingSupply = tokenContract.cap().sub(tokenContract.totalSupply());
-
     // update lookup records for asset registry
-    assetRegistry.updateAssetLookup(_tokenAddress, remainingSupply, _amountTokens);
+    uint remainingSupply = tokenContract.cap().sub(tokenContract.totalSupply());
+    require(assetRegistry.updateAssetLookup(_tokenAddress, remainingSupply, _amountTokens));
   }
 }

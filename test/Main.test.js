@@ -88,7 +88,7 @@ contract('Main', (accounts) => {
     await portfolioToken.addMinter(main.address, { from: accounts[0] });
 
     // hacky: give permission for stable token as well
-    await stableToken.addMinter(main.address, { from: accounts[0] });
+    await stableToken.addMinter(assetRegistry.address, { from: accounts[0] });
   });
 
   describe('constructor()', () => {
@@ -183,7 +183,7 @@ contract('Main', (accounts) => {
       portfolioToken = await setupPortfolioContract(accounts[0]);
       await portfolioToken.addMinter(main.address, { from: accounts[0] });
       // hacky: give permission for stable token as well
-      await stableToken.addMinter(main.address, { from: accounts[0] });
+      await stableToken.addMinter(assetRegistry.address, { from: accounts[0] });
     });
 
     it('reverts when there are no assets to invest in', async() => {
@@ -229,8 +229,8 @@ contract('Main', (accounts) => {
         assert.equal(b, b2 , 'assets were invested in evenly');
       });
 
-      it('updates the lookup of fillable assets count to 0', async() => {
-        const count = await main.fillableAssetsCount.call();
+      it('updates the lookup of fillable assets count to 0 (on AssetRegistry)', async() => {
+        const count = await assetRegistry.fillableAssetsCount();
         assert.equal(count, '0', 'storage was updated');
       });
 
@@ -318,7 +318,7 @@ contract('Main', (accounts) => {
         portfolioToken = await setupPortfolioContract(accounts[0]);
         await portfolioToken.addMinter(main.address, { from: accounts[0] });
         // hacky: give permission for stable token as well
-        await stableToken.addMinter(main.address, { from: accounts[0] });
+        await stableToken.addMinter(assetRegistry.address, { from: accounts[0] });
 
         // now prepare scenario
         await addAsset(accounts[2]);

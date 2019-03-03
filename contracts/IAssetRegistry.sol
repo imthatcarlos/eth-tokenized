@@ -13,9 +13,8 @@ interface IAssetRegistry {
   function setMainContractAddress(address _contractAddress) external;
   function addAsset(address payable _owner, string calldata _name, uint _valueUSD, uint _cap, uint _annualizedROI, uint _projectedValueUSD, uint _timeframeMonths, uint _valuePerTokenCents) external;
   function editAsset(address payable _tokenAddress, uint _valueUSD, uint _annualizedROI, uint _projectedValueUSD, uint _timeframeMonths, uint _valuePerTokenCents) external;
-  function updateAssetLookup(address _tokenAddress, uint _remainingSupply, uint _tokensMinted) external;
+  function updateAssetLookup(address _tokenAddress, uint _remainingSupply, uint _tokensMinted) external returns(bool);
   function fundAsset(uint _amountStable, uint _assetId) external;
-  function setAssetFilled(uint _assetId) external;
   function calculateTotalProjectedValue() external view returns(uint);
   function calculateTotalCurrentValue() external view returns(uint);
   function getAssetIdByToken(address _tokenAddress) external view returns(uint);

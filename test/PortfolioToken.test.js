@@ -72,7 +72,7 @@ async function investPortfolio(investor) {
   await stableToken.mint(investor, investingTokens);
   await stableToken.approve(main.address, investingTokens, { from: investor });
 
-  await main.investPortfolio(investingTokens, { from: investor, gas: 1200000 });
+  await main.investPortfolio(investingTokens, { from: investor, gas: 1500000 });
 }
 
 contract('PortfolioToken', (accounts) => {
@@ -86,7 +86,7 @@ contract('PortfolioToken', (accounts) => {
       portfolioToken = await setupPortfolioContract(accounts[0]);
       await portfolioToken.addMinter(main.address, { from: accounts[0] });
       // hacky: give permission for stable token as well
-      await stableToken.addMinter(main.address, { from: accounts[0] });
+      await stableToken.addMinter(assetRegistry.address, { from: accounts[0] });
     });
 
     before(async ()=> {
@@ -117,7 +117,7 @@ contract('PortfolioToken', (accounts) => {
       portfolioToken = await setupPortfolioContract(accounts[0]);
       await portfolioToken.addMinter(main.address, { from: accounts[0] });
       // hacky: give permission for stable token as well
-      await stableToken.addMinter(main.address, { from: accounts[0] });
+      await stableToken.addMinter(assetRegistry.address, { from: accounts[0] });
     });
 
     describe('context: only one investor', () => {
