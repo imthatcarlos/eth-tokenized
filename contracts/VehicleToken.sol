@@ -31,8 +31,9 @@ contract VehicleToken is IVehicleToken, ERC20Burnable, ERC20Capped, Ownable {
   string public name;                  // might want to define a standard, ex: MAKE MODEL YEAR
   uint public valueUSD;                // initial USD value of the asset
   uint public annualizedROI;           // percentage value
-  uint public projectedValueUSD;       // projected USD value of the asset
   uint public createdAt;               // datetime when contract was created
+
+  uint private _projectedValueUSD;       // projected USD value of the asset
   uint private _timeframeMonths;         // timeframe to be sold (months)
   uint private _valuePerTokenCents;
 
@@ -54,7 +55,7 @@ contract VehicleToken is IVehicleToken, ERC20Burnable, ERC20Capped, Ownable {
    * @param _valueUSD Value of the asset in USD
    * @param _cap token cap == _valueUSD / _valuePerTokenUSD
    * @param _annualizedROI AROI %
-   * @param _projectedValueUSD The PROJECTED value of the asset in USD
+   * @param __projectedValueUSD The PROJECTED value of the asset in USD
    * @param __timeframeMonths Time frame for the investment
    * @param __valuePerTokenCents Value of each token
    */
@@ -65,14 +66,14 @@ contract VehicleToken is IVehicleToken, ERC20Burnable, ERC20Capped, Ownable {
     uint _valueUSD,
     uint _cap,
     uint _annualizedROI,
-    uint _projectedValueUSD,
+    uint __projectedValueUSD,
     uint __timeframeMonths,
     uint __valuePerTokenCents
   ) public ERC20Capped(_cap) {
     name = _name;
     valueUSD = _valueUSD;
     annualizedROI = _annualizedROI;
-    projectedValueUSD = _projectedValueUSD;
+    _projectedValueUSD = __projectedValueUSD;
     createdAt = block.timestamp; // solium-disable-line security/no-block-members, whitespace
     _timeframeMonths = __timeframeMonths;
     _valuePerTokenCents = __valuePerTokenCents;
@@ -84,20 +85,20 @@ contract VehicleToken is IVehicleToken, ERC20Burnable, ERC20Capped, Ownable {
    * Allows the contract owner to edit certain data about the asset
    * @param _valueUSD Value of the asset in USD
    * @param _annualizedROI AROI %
-   * @param _projectedValueUSD The PROJECTED value of the asset in USD
+   * @param __projectedValueUSD The PROJECTED value of the asset in USD
    * @param __timeframeMonths Time frame for the investment
    * @param __valuePerTokenCents Value of each token
    */
   function editAssetData(
     uint _valueUSD,
     uint _annualizedROI,
-    uint _projectedValueUSD,
+    uint __projectedValueUSD,
     uint __timeframeMonths,
     uint __valuePerTokenCents
   ) public onlyOwner {
     valueUSD = _valueUSD;
     annualizedROI = _annualizedROI;
-    projectedValueUSD = _projectedValueUSD;
+    _projectedValueUSD = __projectedValueUSD;
     _timeframeMonths = __timeframeMonths;
     _valuePerTokenCents = __valuePerTokenCents;
   }
@@ -185,12 +186,16 @@ contract VehicleToken is IVehicleToken, ERC20Burnable, ERC20Capped, Ownable {
     }
   }
 
-  function timeframeMonths() public view returns(uint value) {
+  function timeframeMonths() public view returns(uint) {
     return _timeframeMonths;
   }
 
-  function valuePerTokenCents() external view returns(uint value) {
+  function valuePerTokenCents() public view returns(uint) {
     return _valuePerTokenCents;
+  }
+
+  function projectedValueUSD() public view returns(uint) {
+    return _projectedValueUSD;
   }
 
   /**
