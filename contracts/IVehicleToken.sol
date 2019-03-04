@@ -17,7 +17,12 @@ interface IVehicleToken {
   function cap() external view returns(uint value);
   function totalSupply() external view returns(uint value);
   function timeframeMonths() external view returns(uint value);
+  function projectedValueUSD() external view returns(uint);
 
-  // erc20 mintable
+  // openzeppelin-solidity/contracts/token/ERC20/ERC20Mintable.sol
   function mint(address to, uint256 tokenId) external returns (bool);
+
+  // openzeppelin-solidity/contracts/token/ERC20/IERC20.sol
+  function balanceOf(address who) external view returns (uint256);
+  function transfer(address to, uint256 value) external returns (bool);
 }
