@@ -56,12 +56,12 @@ module.exports = {
   // },
   networks: {
     development: {
-      provider: function() {
-        provider.addProvider(new RpcProvider({ rpcUrl: "http://localhost:8545" }));
-        provider.start();
-        provider.send = provider.sendAsync.bind(provider);
-        return provider;
-      },
+      // provider: function() {
+      //   provider.addProvider(new RpcProvider({ rpcUrl: "http://localhost:8545" }));
+      //   provider.start();
+      //   provider.send = provider.sendAsync.bind(provider);
+      //   return provider;
+      // },
       host: 'localhost',
       port: 8545,
       network_id: '*',
