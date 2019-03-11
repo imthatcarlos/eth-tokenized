@@ -1,4 +1,4 @@
-## VTToken.sol
+## VehicleToken.sol
 ## is `ERC20Burnable`, `ERC20Capped`, `Ownable`
 
 This token contract represents a particular vehicle asset, and tokens are minted for accounts as they invest in them.

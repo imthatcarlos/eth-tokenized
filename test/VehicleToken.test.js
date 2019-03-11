@@ -1,7 +1,7 @@
 const util = require('ethereumjs-util');
 
-const VTToken = artifacts.require('./VTToken.sol');
-const TToken = artifacts.require('./TToken.sol');
+const VehicleToken = artifacts.require('./VehicleToken.sol');
+const StableToken = artifacts.require('./StableToken.sol');
 
 const shouldFail = require('./helpers/shouldFail');
 const increaseTime = require('./helpers/increaseTime');
@@ -19,7 +19,7 @@ let stableToken;
  * Create instance of contracts
  */
 async function setupTokenContract(assetOwner, timeframeMonths = 12) {
-  return await VTToken.new(
+  return await VehicleToken.new(
     assetOwner,
     stableToken.address,
     ASSET_NAME,
@@ -37,9 +37,9 @@ function calculateProjectedProfit(value = VALUE_USD, timeframeMonths = 12) {
   return (value * (ANNUALIZED_ROI / 100)) * (timeframeMonths / 12);
 }
 
-contract('VTToken', (accounts) => {
+contract('VehicleToken', (accounts) => {
   before(async ()=> {
-    stableToken = await TToken.new();
+    stableToken = await StableToken.new();
     web3.currentProvider.sendAsync = web3.currentProvider.send.bind(web3.currentProvider);
   });
 
@@ -196,7 +196,7 @@ contract('VTToken', (accounts) => {
     //   before(async() => {
     //     // refresh contracts
     //     token = await setupTokenContract(accounts[0].toLowerCase());
-    //     stableToken = await TToken.new();
+    //     stableToken = await StableToken.new();
     //   });
     //
     //   // it('reverts if the asset owner has not funded with T tokens', async() => {

@@ -1,4 +1,4 @@
-## PTToken.sol
+## PortfolioToken.sol
 ## is `ERC20Burnable`, `ERC20Capped`
 
 This token contract represents a particular vehicle asset, and tokens are minted for accounts as they invest in them.

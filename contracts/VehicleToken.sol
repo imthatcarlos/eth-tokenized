@@ -3,12 +3,12 @@ pragma solidity 0.5.0;
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Burnable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Capped.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-//import "./ERC223.sol";
-import "./TToken.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "./IVehicleToken.sol";
+import "./StableToken.sol";
 
 /**
- * @title VTToken
+ * @title VehicleToken
  * This token contract represents a particular vehicle asset, and tokens are minted for
  * accounts as they invest in them.
  * NOTE: all numbers (except timeframeMonths, annualizedROI, and valuePerTokenCents) will have 18 decimal places to
@@ -18,7 +18,7 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
  *        contract, which itself will only be accessible to that contract owner
  * @author Carlos Beltran <imthatcarlos@gmail.com>
  */
-contract VTToken is ERC20Burnable, ERC20Capped, Ownable {
+contract VehicleToken is IVehicleToken, ERC20Burnable, ERC20Capped, Ownable {
   using SafeMath for uint;
 
   uint public decimals = 18;  // allows us to divide and retain decimals
@@ -31,12 +31,13 @@ contract VTToken is ERC20Burnable, ERC20Capped, Ownable {
   string public name;                  // might want to define a standard, ex: MAKE MODEL YEAR
   uint public valueUSD;                // initial USD value of the asset
   uint public annualizedROI;           // percentage value
-  uint public projectedValueUSD;       // projected USD value of the asset
   uint public createdAt;               // datetime when contract was created
-  uint public timeframeMonths;         // timeframe to be sold (months)
-  uint public valuePerTokenCents;
 
-  TToken private stableToken;
+  uint private _projectedValueUSD;       // projected USD value of the asset
+  uint private _timeframeMonths;         // timeframe to be sold (months)
+  uint private _valuePerTokenCents;
+
+  StableToken private stableToken;
 
   // mapping(address => uint) mintedAtTimestamps; // lets us track when tokens were minted for which address
 
@@ -54,9 +55,9 @@ contract VTToken is ERC20Burnable, ERC20Capped, Ownable {
    * @param _valueUSD Value of the asset in USD
    * @param _cap token cap == _valueUSD / _valuePerTokenUSD
    * @param _annualizedROI AROI %
-   * @param _projectedValueUSD The PROJECTED value of the asset in USD
-   * @param _timeframeMonths Time frame for the investment
-   * @param _valuePerTokenCents Value of each token
+   * @param __projectedValueUSD The PROJECTED value of the asset in USD
+   * @param __timeframeMonths Time frame for the investment
+   * @param __valuePerTokenCents Value of each token
    */
   constructor(
     address payable _assetOwner,
@@ -65,18 +66,18 @@ contract VTToken is ERC20Burnable, ERC20Capped, Ownable {
     uint _valueUSD,
     uint _cap,
     uint _annualizedROI,
-    uint _projectedValueUSD,
-    uint _timeframeMonths,
-    uint _valuePerTokenCents
+    uint __projectedValueUSD,
+    uint __timeframeMonths,
+    uint __valuePerTokenCents
   ) public ERC20Capped(_cap) {
     name = _name;
     valueUSD = _valueUSD;
     annualizedROI = _annualizedROI;
-    projectedValueUSD = _projectedValueUSD;
+    _projectedValueUSD = __projectedValueUSD;
     createdAt = block.timestamp; // solium-disable-line security/no-block-members, whitespace
-    timeframeMonths = _timeframeMonths;
-    valuePerTokenCents = _valuePerTokenCents;
-    stableToken = TToken(_stableTokenAddress);
+    _timeframeMonths = __timeframeMonths;
+    _valuePerTokenCents = __valuePerTokenCents;
+    stableToken = StableToken(_stableTokenAddress);
     assetOwner = _assetOwner;
   }
 
@@ -84,22 +85,22 @@ contract VTToken is ERC20Burnable, ERC20Capped, Ownable {
    * Allows the contract owner to edit certain data about the asset
    * @param _valueUSD Value of the asset in USD
    * @param _annualizedROI AROI %
-   * @param _projectedValueUSD The PROJECTED value of the asset in USD
-   * @param _timeframeMonths Time frame for the investment
-   * @param _valuePerTokenCents Value of each token
+   * @param __projectedValueUSD The PROJECTED value of the asset in USD
+   * @param __timeframeMonths Time frame for the investment
+   * @param __valuePerTokenCents Value of each token
    */
   function editAssetData(
     uint _valueUSD,
     uint _annualizedROI,
-    uint _projectedValueUSD,
-    uint _timeframeMonths,
-    uint _valuePerTokenCents
+    uint __projectedValueUSD,
+    uint __timeframeMonths,
+    uint __valuePerTokenCents
   ) public onlyOwner {
     valueUSD = _valueUSD;
     annualizedROI = _annualizedROI;
-    projectedValueUSD = _projectedValueUSD;
-    timeframeMonths = _timeframeMonths;
-    valuePerTokenCents = _valuePerTokenCents;
+    _projectedValueUSD = __projectedValueUSD;
+    _timeframeMonths = __timeframeMonths;
+    _valuePerTokenCents = __valuePerTokenCents;
   }
 
   /**
@@ -114,7 +115,7 @@ contract VTToken is ERC20Burnable, ERC20Capped, Ownable {
    */
   function getCurrentValue() public view returns(uint) {
     uint perSec = calculateProfitPerSecond(cap());
-    return valueUSD.add(perSec.mul(valuePerTokenCents).mul(block.timestamp - createdAt));
+    return valueUSD.add(perSec.mul(_valuePerTokenCents).mul(block.timestamp - createdAt));
   }
 
   /**
@@ -134,7 +135,7 @@ contract VTToken is ERC20Burnable, ERC20Capped, Ownable {
   function getCurrentValuePortfolio() public view activeInvestment returns(uint) {
     uint amountTokens = balanceOf(msg.sender);
     uint perSec = calculateProfitPerSecond(amountTokens);
-    return valueUSD.add(perSec.mul(valuePerTokenCents).mul(block.timestamp - createdAt));
+    return valueUSD.add(perSec.mul(_valuePerTokenCents).mul(block.timestamp - createdAt));
   }
 
   /**
@@ -145,7 +146,7 @@ contract VTToken is ERC20Burnable, ERC20Capped, Ownable {
     uint yearly = calculateProfitYearly(amountTokens);
     uint monthly = yearly.div(MONTHS_PER_YEAR);
 
-    return monthly.mul(timeframeMonths);
+    return monthly.mul(_timeframeMonths);
   }
 
   /**
@@ -183,6 +184,18 @@ contract VTToken is ERC20Burnable, ERC20Capped, Ownable {
       // and terminate the contract, sending any remaining ETH to the asset owner
       selfdestruct(assetOwner);
     }
+  }
+
+  function timeframeMonths() public view returns(uint) {
+    return _timeframeMonths;
+  }
+
+  function valuePerTokenCents() public view returns(uint) {
+    return _valuePerTokenCents;
+  }
+
+  function projectedValueUSD() public view returns(uint) {
+    return _projectedValueUSD;
   }
 
   /**

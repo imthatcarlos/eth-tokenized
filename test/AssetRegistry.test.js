@@ -1,8 +1,8 @@
 const util = require('ethereumjs-util');
 
-const VTToken = artifacts.require('./VTToken.sol');
-const TToken = artifacts.require('./TToken.sol');
-const PTToken = artifacts.require('./PTToken.sol');
+const VehicleToken = artifacts.require('./VehicleToken.sol');
+const StableToken = artifacts.require('./StableToken.sol');
+const PortfolioToken = artifacts.require('./PortfolioToken.sol');
 const AssetRegistry = artifacts.require('./AssetRegistry.sol');
 const Main = artifacts.require('./Main.sol');
 
@@ -36,7 +36,7 @@ let main;
  }
 
  async function setupPortfolioContract(contractOwner) {
-   const contract = await PTToken.new();
+   const contract = await PortfolioToken.new();
    await main.setPortfolioToken(contract.address, { from: contractOwner });
    return contract;
  }
@@ -61,7 +61,7 @@ async function addAsset(assetOwner) {
 
 contract('AssetRegistry', (accounts) => {
   before(async ()=> {
-    stableToken = await TToken.new({ from: accounts[0] });
+    stableToken = await StableToken.new({ from: accounts[0] });
   });
 
   describe('addAsset()', () => {
@@ -73,8 +73,8 @@ contract('AssetRegistry', (accounts) => {
       // give Main contract minting permission
       await portfolioToken.addMinter(main.address, { from: accounts[0] });
 
-      // hacky: give permission for stable token as well
-      await stableToken.addMinter(main.address, { from: accounts[0] });
+      // hacky: give permission for AssetRegistry to add minters
+      await stableToken.addMinter(registry.address, { from: accounts[0] });
     });
 
     it('adds the asset to storage', async() => {
@@ -90,10 +90,10 @@ contract('AssetRegistry', (accounts) => {
     });
 
     it('calls Main contract addFillableAsset(), increasing its storage count and updating the min value', async() => {
-      const count = await main.fillableAssetsCount.call();
+      const count = await registry.fillableAssetsCount.call();
       assert.equal(count.toNumber(), '1', 'increased count of fillable assets');
 
-      const minVal = await main.minFillableAmount.call();
+      const minVal = await registry.minFillableAmount.call();
       assert.equal(minVal.toNumber(), CAP, 'this asset is the closest to being filled');
     });
   });
@@ -128,7 +128,7 @@ contract('AssetRegistry', (accounts) => {
        { from: accounts[0] }
       );
 
-      const token = await VTToken.at(data.tokenAddress);
+      const token = await VehicleToken.at(data.tokenAddress);
       const newData = await token.valueUSD.call();
 
       assert.equal(newData, (VALUE_USD + 1).toString(), 'storage was updated');
@@ -142,7 +142,7 @@ contract('AssetRegistry', (accounts) => {
       portfolioToken = await setupPortfolioContract(accounts[0]);
       await portfolioToken.addMinter(main.address, { from: accounts[0] });
       // hacky: give permission for stable token as well
-      await stableToken.addMinter(main.address, { from: accounts[0] });
+      await stableToken.addMinter(registry.address, { from: accounts[0] });
 
       await addAsset(accounts[3]);
     });

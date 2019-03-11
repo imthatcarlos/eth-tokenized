@@ -1,8 +1,8 @@
 const util = require('ethereumjs-util');
 
-const VTToken = artifacts.require('./VTToken.sol');
-const TToken = artifacts.require('./TToken.sol');
-const PTToken = artifacts.require('./PTToken.sol');
+const VehicleToken = artifacts.require('./VehicleToken.sol');
+const StableToken = artifacts.require('./StableToken.sol');
+const PortfolioToken = artifacts.require('./PortfolioToken.sol');
 const Main = artifacts.require('./Main.sol');
 const AssetRegistry = artifacts.require('./AssetRegistry.sol')
 
@@ -40,7 +40,7 @@ async function setupAssetRegistryContract(contractOwner) {
 }
 
 async function setupPortfolioContract(contractOwner) {
-  const contract = await PTToken.new();
+  const contract = await PortfolioToken.new();
   await main.setPortfolioToken(contract.address, { from: contractOwner });
   return contract;
 }
@@ -72,31 +72,27 @@ async function investPortfolio(investor) {
   await stableToken.mint(investor, investingTokens);
   await stableToken.approve(main.address, investingTokens, { from: investor });
 
-  await main.investPortfolio(investingTokens, { from: investor, gas: 1200000 });
+  await main.investPortfolio(investingTokens, { from: investor, gas: 1500000 });
 }
 
-contract('PTToken', (accounts) => {
-  after(async () => {
-    await global.coverageSubprovider.writeCoverageAsync();
-  });
-
+contract('PortfolioToken', (accounts) => {
   describe('addInvestment()', () => {
     before(async ()=> {
       web3.currentProvider.sendAsync = web3.currentProvider.send.bind(web3.currentProvider);
 
-      stableToken = await TToken.new({ from: accounts[0] });
+      stableToken = await StableToken.new({ from: accounts[0] });
       main = await setupMainContract(accounts[0]);
       assetRegistry = await setupAssetRegistryContract(accounts[0]);
       portfolioToken = await setupPortfolioContract(accounts[0]);
       await portfolioToken.addMinter(main.address, { from: accounts[0] });
       // hacky: give permission for stable token as well
-      await stableToken.addMinter(main.address, { from: accounts[0] });
+      await stableToken.addMinter(assetRegistry.address, { from: accounts[0] });
     });
 
     before(async ()=> {
       await addAsset(accounts[2]);
       assetData = await assetRegistry.getAssetById(1);
-      assetToken = await VTToken.at(assetData.tokenAddress);
+      assetToken = await VehicleToken.at(assetData.tokenAddress);
     });
 
     it('reverts if the investor does not have PT tokens', async() => {
@@ -115,13 +111,13 @@ contract('PTToken', (accounts) => {
 
   describe('claimFundsAndBurn()', async() => {
     before(async ()=> {
-      stableToken = await TToken.new({ from: accounts[0] });
+      stableToken = await StableToken.new({ from: accounts[0] });
       main = await setupMainContract(accounts[0]);
       assetRegistry = await setupAssetRegistryContract(accounts[0]);
       portfolioToken = await setupPortfolioContract(accounts[0]);
       await portfolioToken.addMinter(main.address, { from: accounts[0] });
       // hacky: give permission for stable token as well
-      await stableToken.addMinter(main.address, { from: accounts[0] });
+      await stableToken.addMinter(assetRegistry.address, { from: accounts[0] });
     });
 
     describe('context: only one investor', () => {
@@ -131,10 +127,10 @@ contract('PTToken', (accounts) => {
         await addAsset(accounts[3]);
 
         assetData = await assetRegistry.getAssetById(1);
-        assetToken = await VTToken.at(assetData.tokenAddress);
+        assetToken = await VehicleToken.at(assetData.tokenAddress);
 
         assetData2 = await assetRegistry.getAssetById(2);
-        assetToken2 = await VTToken.at(assetData2.tokenAddress);
+        assetToken2 = await VehicleToken.at(assetData2.tokenAddress);
 
         // invest in PT
         await investPortfolio(accounts[4]);
