@@ -1,6 +1,6 @@
 pragma solidity ^0.5.5;
 
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20Mintable.sol"; // need for tests
+import "./../node_modules/openzeppelin-solidity/contracts/token/ERC20/ERC20Mintable.sol"; // need for tests
 
 /**
  * @title StableToken

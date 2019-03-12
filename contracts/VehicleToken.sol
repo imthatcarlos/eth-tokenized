@@ -1,9 +1,9 @@
 pragma solidity ^0.5.5;
 
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20Burnable.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20Capped.sol";
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "./../node_modules/openzeppelin-solidity/contracts/token/ERC20/ERC20Burnable.sol";
+import "./../node_modules/openzeppelin-solidity/contracts/token/ERC20/ERC20Capped.sol";
+import "./../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "./../node_modules/openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "./IVehicleToken.sol";
 import "./StableToken.sol";
 
