@@ -49,11 +49,11 @@ module.exports = {
   mocha: {
     useColors: true
   },
-  // compilers: {
-  //   solc: {
-  //     version: '0.4.24'
-  //   }
-  // },
+  compilers: {
+    solc: {
+      version: '^0.5.5'
+    }
+  },
   networks: {
     development: {
       // provider: function() {

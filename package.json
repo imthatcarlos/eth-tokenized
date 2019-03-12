@@ -1,7 +1,7 @@
 {
   "name": "eth-tokenized",
   "version": "1.1.0",
-  "description": "collection of smart contracts to tokenize assets",
+  "description": "collection of smart contracts to tokenize assets for investing",
   "main": "truffle.js",
   "scripts": {
     "geth": "docker run -it --rm -p 8545:8501 0xorg/devnet",
